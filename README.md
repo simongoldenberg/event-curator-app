@@ -1,7 +1,7 @@
 # Event Curator · Version 0.1.0
 
 Lokale Python-Anwendung für Konzerte, Parties, Raves und Open Airs in den Räumen
-**Würzburg, Freiburg und Wien**. Persönliche Profile, Künstlerlisten, Quellenkonfigurationen
+**Würzburg, Freiburg, Wien, Berlin und Frankfurt am Main**. Persönliche Profile, Künstlerlisten, Quellenkonfigurationen
 und Reports bleiben außerhalb von Git. Quellcode unter MIT-Lizenz.
 
 ## Schnellstart
@@ -33,9 +33,25 @@ Linux/macOS:
 auch die Kurzform `python main.py --interview`.
 
 Ohne Optionen entstehen **fiktive, deutlich markierte** Beispielberichte unter
-`exports/digest-YYYY-MM-demo.md` und `.html`. Sie demonstrieren beide Rubriken und den Regionsfilter.
-Ein Live-Lauf erzeugt separate Dateien ohne `-demo`. HTML enthält keine externen Fonts,
-Skripte, Bilder oder Tracker.
+`exports/digest-YYYY-MM-demo.md` und `.html`. Sie demonstrieren Rubriken, Filter, Karte und Regionsprüfung.
+Ein Live-Lauf erzeugt separate Dateien ohne `-demo`. Öffne die HTML-Datei im Browser per Doppelklick.
+Die Oberfläche funktioniert auch auf schmalen Handybildschirmen und lädt keine Schriften,
+Kartenkacheln, Skripte oder Tracker von externen Servern.
+
+### Die interaktive Übersicht bedienen
+
+- Oben zu **Karte**, **Konzerte**, **Parties**, **Downtempo-Radar** oder **Quellen** springen.
+- Auf der Karte Orte, Eventart und Suchtext filtern. Die Eventkarten und Venue-Pins folgen derselben Auswahl.
+- Einen Pin oder Venue-Eintrag antippen, um Details zu sehen; per Plus/Minus zoomen oder die Karte ziehen.
+- In einer Eventkarte **Auf Karte** antippen, um zur Venue zu springen.
+- Die schraffierten Kreise markieren ungefähr den eingestellten Suchradius. Die exakte
+  Regionsprüfung erfolgt anhand der Koordinaten im Python-Code.
+- Fehlt bei einer Quelle ein Venue-Name, heißt der Pin „Ort in … nicht benannt“. Die Event-Koordinate
+  ist dann kein Beleg für einen bestimmten Club.
+
+Die Kartenbasis stammt aus den gemeinfreien
+[Natural-Earth-Kartendaten](https://www.naturalearthdata.com/about/terms-of-use/) und liegt als SVG im Projekt.
+Zum Reproduzieren gibt es `scripts/build_map_asset.py`; dafür ist einmalig Internet nötig.
 
 ## Eigene Künstler und Party-Profil
 
@@ -59,7 +75,7 @@ unerwünschte Begriffe ab. Es speichert erst nach Abschluss atomar in
 
 ## Regionen und Matching
 
-- Standard: **75 km Luftlinie** um jede Zielstadt; im Interview 1–200 km einstellbar.
+- Standard: **50 km Luftlinie** um jede der fünf Zielstädte; im Interview 1–200 km einstellbar.
 - Koordinaten werden per Haversine-Distanz geprüft. Grenznahe Orte sind zulässig,
   sofern sie innerhalb des Radius liegen.
 - Ohne Koordinaten muss der exakte Stadtname einschließlich bekannter Schreibvarianten
@@ -68,7 +84,8 @@ unerwünschte Begriffe ab. Es speichert erst nach Abschluss atomar in
 - Abgesagte/verschobene Events sowie Ausschlussbegriffe werden herausgefiltert.
 - Gleicher Titel, Startzeit, Stadt und Venue werden dedupliziert. Abweichende Quellentitel
   können weiterhin doppelt erscheinen.
-- Artist-Treffer: 50 Punkte; Genre-/Konzeptbegriffe: jeweils 10; heuristische Nähe zu einer
+- Persönlicher Artist-Treffer: 50 Punkte; ein belegter Name aus dem öffentlichen
+  Downtempo-Radar: 14 Punkte; Genre-/Konzeptbegriffe: jeweils 10; heuristische Nähe zu einer
   gewählten Vibe-Referenz: 3. Der Bericht nennt die Gründe. Regionale Events ohne belegten
   Match stehen mit 0 Punkten darunter. Das ist keine Qualitätsbewertung.
 
@@ -186,8 +203,7 @@ ebenfalls ein. Aus belegten Favoriten-Auftritten werden Venues abgeleitet. Weite
 aus geladenen Events derselben Venue erscheinen als Vorschläge, mit Datum und Quelle der
 Verbindung. Gemeinsame Venues beweisen noch keine musikalische Ähnlichkeit.
 
-Recherche darf über die drei Zielregionen hinausgehen: Berlin und Frankfurt sind also
-als Referenzen sinnvoll. **Der Event-Digest behält trotzdem seinen Regionsfilter.**
+Recherche darf über die fünf Zielregionen hinausgehen. **Der Event-Digest behält trotzdem seinen Regionsfilter.**
 Ergebnisse: `data/user_discovery.json` und `exports/discovery.md`. Favoriten und Profil werden
 nicht automatisch verändert. SoundCloud-Gigtexte ohne belastbares Datum/Ort werden nicht
 zu bestätigten Events umgedeutet. Sie können nach Prüfung in die lokale Eventdatei übernommen werden.
@@ -321,4 +337,3 @@ exports/                      Lokale Reports, niemals in Git
 Tests prüfen Regions-/Datumsgrenzen, Absagen, CSV/BOM, Interview-Abbruch, HTML-Escaping,
 Adapterformate, Rechercheverbindungen und Git-Datenschutzregeln. Live-Verfügbarkeit,
 API-Zugriff und ein vollständiges Clubprogramm lassen sich mit Offline-Tests nicht garantieren.
-

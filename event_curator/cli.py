@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 import re
 import sys
-from config import DATA, EXPORTS, PROFILE, REGIONS, ROOT, SOURCES, STATE, load_env
+from config import DATA, DEFAULT_RADIUS_KM, EXPORTS, PROFILE, REGIONS, ROOT, SOURCES, STATE, load_env
 from . import APP_VERSION
 from .discovery import page_hints, write_discovery
 from .interview import interview, validate_profile
@@ -83,7 +83,7 @@ def run(args):
         client = HttpClient()
         for region in profile.get("regions") or list(REGIONS):
             try:
-                found, notes = fetch_region(client, region, args.month, profile.get("radius_km", 75))
+                found, notes = fetch_region(client, region, args.month, profile.get("radius_km", DEFAULT_RADIUS_KM))
                 events.extend(found)
                 warnings.extend(notes)
                 failed |= bool(notes)
@@ -147,7 +147,7 @@ def run(args):
     if args.discover:
         print(f"Recherche: {write_discovery(events, artists, pages, DATA, output, warnings)}")
     matches = match_events(events, artists, profile, start, end, today=start if demo else None)
-    paths = write_digest(matches, args.month, output, warnings, statuses, demo)
+    paths = write_digest(matches, args.month, output, warnings, statuses, demo, profile.get("radius_km", DEFAULT_RADIUS_KM))
     print(f"Event Curator {APP_VERSION}: {len(matches)} regionale Funde")
     for path in paths:
         print(path)

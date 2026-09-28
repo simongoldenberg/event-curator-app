@@ -8,6 +8,7 @@ from event_curator.cli import month_bounds, main
 from event_curator.discovery import venue_network, page_hints
 from event_curator.interview import interview, validate_profile
 from event_curator.matching import match_events, region_match
+from config import DEFAULT_RADIUS_KM, REGIONS
 from event_curator.models import Artist, Event, coordinate
 from event_curator.reports import write_digest
 from event_curator.sources.bandsintown import fetch_artist
@@ -35,7 +36,7 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(region_match(event(), {})[0], "Wien")
         self.assertIsNone(region_match(event(city="Vienna", country="US"), {}))
         self.assertIsNone(region_match(event(city="Wiener Neustadt"), {}))
-        self.assertIsNone(region_match(event(latitude=52.52, longitude=13.4), {}))
+        self.assertEqual(region_match(event(latitude=52.52, longitude=13.4), {})[0], "Berlin")
         self.assertIsNotNone(region_match(event(city="unbekannt", latitude=48.21, longitude=16.37), {}))
         self.assertIsNone(region_match(event(latitude=48.5, longitude=16.37), {"radius_km": 1}))
 
@@ -43,6 +44,12 @@ class CoreTests(unittest.TestCase):
         for number in ("nan", "inf", "91"):
             with self.assertRaises(ValueError):
                 coordinate(number, 90)
+
+    def test_five_regions_and_fifty_kilometre_default(self):
+        self.assertEqual(DEFAULT_RADIUS_KM, 50)
+        self.assertEqual(set(REGIONS), {"Würzburg", "Freiburg", "Wien", "Berlin", "Frankfurt"})
+        self.assertEqual(region_match(event(city="Frankfurt am Main", country="DE"), {})[0], "Frankfurt")
+        self.assertIsNone(region_match(event(city="Testort", country="DE", latitude=48.58, longitude=7.8421), {}))
 
     def test_matching_dates_cancelled_exclusions_and_dedup(self):
         events = [event(title="Party", tags=["Downtempo"]), event(title="Party", tags=["Downtempo"]),
@@ -86,7 +93,7 @@ class CoreTests(unittest.TestCase):
             self.assertEqual(path.read_text(), old)
 
     def test_profile_validation(self):
-        for profile in ({"regions": ["Berlin"]}, {"radius_km": -1}, {"genres": "Techno"}):
+        for profile in ({"regions": ["Hamburg"]}, {"radius_km": -1}, {"genres": "Techno"}):
             with self.assertRaises(ValueError):
                 validate_profile(profile)
 
@@ -96,11 +103,22 @@ class CoreTests(unittest.TestCase):
         with temporary_directory() as folder:
             paths = write_digest(matches, "2030-05", Path(folder), [], [], False)
             html = paths[1].read_text(encoding="utf-8")
-            self.assertNotIn("<script>", html)
+            self.assertNotIn("<script>alert(1)</script>", html)
             self.assertNotIn("javascript:", html)
             self.assertIn("Rubrik 1", html)
             self.assertIn("Rubrik 2", html)
             self.assertIn("&lt;script&gt;", html)
+            self.assertIn('id="karte"', html)
+            self.assertIn('id="map-pins"', html)
+            self.assertIn('data-region-filter="Berlin"', html)
+            self.assertIn("Downtempo-Radar", html)
+
+    def test_featured_artist_is_distinct_from_favorite(self):
+        featured = event(title="Acid Pauli Live")
+        found = match_events([featured], [], {}, date(2030, 5, 1), date(2030, 6, 1), today=date(2030, 5, 1))
+        self.assertEqual(found[0].score, 14)
+        favorite = match_events([featured], [Artist("Acid Pauli")], {}, date(2030, 5, 1), date(2030, 6, 1), today=date(2030, 5, 1))
+        self.assertEqual(favorite[0].score, 50)
 
     def test_discovery_network_keeps_favorites_separate(self):
         old = event(start=datetime(2020, 1, 1), artists=["Favorite", "New Artist"], url="https://example.org/old")
@@ -179,7 +197,7 @@ class CoreTests(unittest.TestCase):
                 argv = ["--live", "--monthly", "--month", "2030-05", "--output", str(root)]
                 self.assertEqual(main(argv), 0)
                 self.assertEqual(main(argv), 0)
-                self.assertEqual(fetch.call_count, 3)
+                self.assertEqual(fetch.call_count, 5)
 
     def test_privacy_allowlist_and_secret(self):
         self.assertTrue(public_path("data/sample_artists.csv"))

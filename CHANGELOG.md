@@ -1,5 +1,15 @@
 # Änderungsprotokoll
 
+## In Entwicklung — 2026-09-28
+
+### 🚀 Added
+- Responsive HTML-Oberfläche mit Sprungmarken, Orts- und Typfiltern, Suche und interaktiver Offline-Karte.
+- Berlin und Frankfurt als Zielregionen sowie öffentlich belegter Downtempo-Artist-Radar.
+
+### 🔄 Changed
+- Standardsuchradius von 75 auf 50 Kilometer reduziert.
+- Monatsberichte zeigen Venues als Kartenpunkte, sofern Koordinaten verfügbar sind.
+
 ## Version 0.1.0 — 2026-09-28
 
 ### 🚀 Added

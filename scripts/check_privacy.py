@@ -11,7 +11,7 @@ SECRET = re.compile(rb"(?:gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,
 
 def public_path(path):
     p = PurePosixPath(path)
-    if path in ROOT_FILES or path == "data/sample_artists.csv":
+    if path in ROOT_FILES or path in {"data/sample_artists.csv", "event_curator/ui/europe_map.svg", "event_curator/ui/dashboard.css", "event_curator/ui/dashboard.js"}:
         return True
     return len(p.parts) > 1 and p.parts[0] in SOURCE_DIRS and p.suffix in {".py", ".ps1", ".sh", ".md"} and not any(part.startswith("user_") for part in p.parts)
 

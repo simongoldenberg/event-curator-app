@@ -28,7 +28,7 @@ def interview(path=PROFILE, input_fn=input, output=print):
     genres = choose("Welche Genres/Vibes magst du?", GENRES, input_fn, output)
     concepts = choose("Welche Event-Konzepte passen zu dir?", CONCEPTS, input_fn, output)
     venues = choose("Welche Orte/Festivals dienen als Vibe-Referenz?", VENUES, input_fn, output)
-    regions = choose("Welche Zielregionen? (Enter = alle drei)", list(REGIONS), input_fn, output) or list(REGIONS)
+    regions = choose("Welche Zielregionen? (Enter = alle fünf)", list(REGIONS), input_fn, output) or list(REGIONS)
     while True:
         raw = input_fn(f"Suchradius je Region in km [Standard {DEFAULT_RADIUS_KM}, 1–200]: ").strip()
         try:
@@ -58,4 +58,3 @@ def validate_profile(profile):
     if not isinstance(radius, (int, float)) or not 1 <= radius <= 200:
         raise ValueError("Suchradius muss zwischen 1 und 200 km liegen.")
     return profile
-

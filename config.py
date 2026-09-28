@@ -12,8 +12,10 @@ REGIONS = {
     "Würzburg": (49.7913, 9.9534, "DE", ("würzburg", "wuerzburg", "wurzburg")),
     "Freiburg": (47.9990, 7.8421, "DE", ("freiburg", "freiburg im breisgau")),
     "Wien": (48.2082, 16.3738, "AT", ("wien", "vienna")),
+    "Berlin": (52.5200, 13.4050, "DE", ("berlin",)),
+    "Frankfurt": (50.1109, 8.6821, "DE", ("frankfurt", "frankfurt am main")),
 }
-DEFAULT_RADIUS_KM = 75
+DEFAULT_RADIUS_KM = 50
 
 
 def load_env(path=ROOT / ".env"):
@@ -28,4 +30,3 @@ def load_env(path=ROOT / ".env"):
         if not sep or key.strip() != "BANDSINTOWN_APP_ID":
             continue
         os.environ.setdefault(key.strip(), value.strip().strip("\"'"))
-

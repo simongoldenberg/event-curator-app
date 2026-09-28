@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from datetime import date
 from math import asin, cos, radians, sin, sqrt
 from config import REGIONS, DEFAULT_RADIUS_KM
+from .featured import FEATURED_ARTISTS
 from .models import normalized
 
 # Transparente, heuristische Begriffe; keine Behauptung über tatsächliche Clubprogramme.
@@ -78,6 +79,11 @@ def match_events(events, artists, profile, start, end, today=None):
             if any(normalized(artist.name) == normalized(a) for a in event.artists) or contains(event.title + " " + event.description, artist.name):
                 score += 50
                 reasons.append(f"Künstler: {artist.name}")
+        for artist in FEATURED_ARTISTS:
+            if any(normalized(artist.name) == normalized(a) for a in event.artists) or contains(event.title + " " + event.description, artist.name):
+                if not any(normalized(artist.name) == normalized(a.name) for a in artists):
+                    score += 14
+                    reasons.append(f"Downtempo-Radar: {artist.name}")
         genre_prefs = list(dict.fromkeys(profile.get("genres", []) + [g for a in artists for g in a.genres]))
         for pref in genre_prefs + profile.get("concepts", []):
             if any(contains(text, term) for term in ALIASES.get(normalized(pref), [pref])):
