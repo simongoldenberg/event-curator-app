@@ -1,0 +1,2 @@
+# Python >= 3.11; ausschließlich Standardbibliothek, keine Pakete erforderlich.
+
