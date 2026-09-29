@@ -12,12 +12,13 @@ from .matching import match_events
 from .reports import write_digest
 from .sources.bandsintown import fetch_artist
 from .sources.clubs import CLUBS, fetch_club
-from .sources.goabase import fetch_region
+from .sources.goabase import fetch_country, fetch_region, TRAVEL_COUNTRIES
 from .sources.http import HttpClient, SourceError
 from .sources.local import load_local, sample_events
 from .sources.structured import fetch_site
 from .spotify import import_spotify
 from .storage import read_artists, read_json, write_json
+from .venue_catalog import read_venues
 
 
 def month_bounds(value):
@@ -73,6 +74,7 @@ def run(args):
             return 0
     artist_path = Path(args.artists) if args.artists else next((p for p in (DATA / "artists.csv", DATA / "user_artists.csv") if p.exists()), DATA / "sample_artists.csv")
     artists = read_artists(artist_path)
+    venues = read_venues()
     profile = validate_profile(read_json(PROFILE, {}))
     events, warnings, statuses, pages = [], [], [], []
     if artist_path.resolve() != (DATA / "sample_artists.csv").resolve():
@@ -87,6 +89,11 @@ def run(args):
         imported = load_local(Path(args.events))
         events.extend(imported)
         statuses.append(f"Lokaler Eventimport: {len(imported)} Datensätze.")
+    verified = DATA / "user_verified_events.json"
+    if args.live and verified.exists() and not args.events:
+        imported = load_local(verified)
+        events.extend(imported)
+        statuses.append(f"Lokal geprüfte Artist-Termine: {len(imported)} Datensätze.")
     failed = False
     if args.live:
         client = HttpClient()
@@ -98,7 +105,7 @@ def run(args):
                     found, notes = fetch_club(client, club, args.month)
                     events.extend(found)
                     warnings.extend(notes)
-                    failed |= bool(notes)
+                    failed |= any("keine auswertbaren Events" not in note for note in notes)
                     statuses.append(f"Clubprogramm / {club['name']}: {len(found)} Termine.")
                 except (SourceError, ValueError, KeyError, TypeError) as exc:
                     failed = True
@@ -113,6 +120,16 @@ def run(args):
             except (SourceError, ValueError, KeyError, TypeError) as exc:
                 failed = True
                 warnings.append(f"Goabase / {region}: {exc if isinstance(exc, SourceError) else 'Ungültiges Datenformat.'}")
+        for country in TRAVEL_COUNTRIES:
+            try:
+                found, notes = fetch_country(client, country, args.month)
+                events.extend(found)
+                warnings.extend(notes)
+                failed |= bool(notes)
+                statuses.append(f"Goabase / Reiseland {country}: {len(found)} Datensätze.")
+            except (SourceError, ValueError, KeyError, TypeError) as exc:
+                failed = True
+                warnings.append(f"Goabase / Reiseland {country}: {exc if isinstance(exc, SourceError) else 'Ungültiges Datenformat.'}")
         if args.include_bandsintown:
             app_id = os.environ.get("BANDSINTOWN_APP_ID", "")
             if not app_id or artist_path.resolve() == (DATA / "sample_artists.csv").resolve():
@@ -170,9 +187,11 @@ def run(args):
         print(f"Recherche: {write_discovery(events, artists, pages, DATA, output, warnings)}")
     # Die fiktive Beispiel-CSV darf echte Live-Termine nicht über beliebige Genres hochstufen.
     matching_artists = [] if args.live and artist_path.resolve() == (DATA / "sample_artists.csv").resolve() else artists
-    matches = match_events(events, matching_artists, profile, start, end, today=start if demo else None, focused=args.live)
-    paths = write_digest(matches, args.month, output, warnings, statuses, demo, profile.get("radius_km", DEFAULT_RADIUS_KM))
-    print(f"Event Curator {APP_VERSION}: {len(matches)} regionale Funde")
+    matches = match_events(events, matching_artists, profile, start, end, today=start if demo else None,
+                           focused=args.live, travel=args.live or bool(args.events))
+    paths = write_digest(matches, args.month, output, warnings, statuses, demo,
+                         profile.get("radius_km", DEFAULT_RADIUS_KM), venues)
+    print(f"Event Curator {APP_VERSION}: {len(matches)} Funde, {len(venues)} recherchierte Venues")
     for path in paths:
         print(path)
     for warning in dict.fromkeys(warnings):

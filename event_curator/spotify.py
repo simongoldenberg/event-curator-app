@@ -11,7 +11,7 @@ from .models import normalized
 
 MIN_PLAY_MS = 30_000
 MAX_PLAY_MS = 20 * 60_000
-MAX_ARTISTS = 80
+MAX_ARTISTS = 200
 
 
 def import_spotify(folder, destination, replace=False):

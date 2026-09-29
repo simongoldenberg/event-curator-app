@@ -15,6 +15,8 @@ CLUBS = (
      "latitude": 52.51748, "longitude": 13.41902, "parser": "beate"},
     {"name": "Tanzhaus West", "url": "https://tanzhaus-west.de/programm/", "city": "Frankfurt", "country": "DE",
      "latitude": 50.09803, "longitude": 8.6464, "parser": "tanzhaus"},
+    {"name": "Ritter Butzke", "url": "https://club.ritterbutzke.com/events", "city": "Berlin", "country": "DE",
+     "latitude": None, "longitude": None, "parser": "ritter"},
 )
 
 MONTHS = {name: number for number, name in enumerate(
@@ -185,6 +187,31 @@ def tanzhaus_events(client, root, club, year, month):
     return events, warnings
 
 
+def ritter_events(client, root, club, year, month):
+    events, warnings = [], []
+    for anchor in root.nodes(lambda n: n.tag == "a" and n.has_class("event-link")):
+        teaser = clean(anchor.parent)
+        stamp = re.search(r"\b(\d{1,2})\.(\d{1,2})\.(\d{2})\b", teaser)
+        if not stamp or (int(stamp[2]), 2000 + int(stamp[3])) != (month, year):
+            continue
+        url = urljoin(club["url"], anchor.attrs.get("href", ""))
+        if not safe_url(url) or not url.startswith("https://club.ritterbutzke.com/event/"):
+            continue
+        try:
+            detail = document(client.page(url))
+            title = clean(detail.first(lambda n: n.tag == "h1"))
+            content = clean(detail).split("For fans of:", 1)[0]
+            clock = re.search(r"\bab\s+(\d{1,2}):(\d{2})\b", content, re.I)
+            if not title or not clock:
+                warnings.append("Ritter Butzke: Titel oder Uhrzeit auf Detailseite fehlt; Event ausgelassen.")
+                continue
+            start = datetime(year, month, int(stamp[1]), int(clock[1]), int(clock[2]))
+            events.append(make_event(club, title, start, url, content))
+        except (SourceError, ValueError):
+            warnings.append("Ritter Butzke: Detailseite nicht auswertbar; Event ausgelassen.")
+    return events, warnings
+
+
 def fetch_club(client, club, month):
     """Liest echte Terminangaben einer bekannten Primärquelle; keine Genre-Vermutung aus dem Clubnamen."""
     if club not in CLUBS:
@@ -195,6 +222,8 @@ def fetch_club(client, club, month):
         events, warnings = kater_events(root, club, year, number), []
     elif club["parser"] == "beate":
         events, warnings = beate_events(root, club, year, number), []
+    elif club["parser"] == "ritter":
+        events, warnings = ritter_events(client, root, club, year, number)
     else:
         events, warnings = tanzhaus_events(client, root, club, year, number)
     if not events:

@@ -3,6 +3,31 @@ from config import REGIONS, DEFAULT_RADIUS_KM
 from ..models import Event, terms
 from .http import SourceError
 
+TRAVEL_COUNTRIES = ("DE", "FR", "CH", "AT")
+
+
+def fetch_country(client, country, month):
+    """Liest die öffentlichen Monatslisten; Detailabrufe bleiben der Regionalsuche vorbehalten."""
+    if country not in TRAVEL_COUNTRIES:
+        raise ValueError("Unbekanntes Reiseland.")
+    query = urlencode({"country": country, "limit": 500, "searchdate": month})
+    payload = client.json("https://www.goabase.net/api/party/json/?" + query, empty_on_404=True)
+    if payload is None:
+        return [], []
+    rows = payload.get("partylist") if isinstance(payload, dict) else payload
+    if isinstance(rows, dict):
+        rows = [rows] if "nameParty" in rows else list(rows.values())
+    if not isinstance(rows, list):
+        raise SourceError("Goabase: unbekanntes Antwortformat.")
+    warnings = [f"Goabase / {country}: 500er-Limit erreicht; Reiseland eventuell unvollständig."] if len(rows) >= 500 else []
+    events = []
+    for row in rows:
+        try:
+            events.append(parse_party(row))
+        except (ValueError, KeyError, TypeError, AttributeError):
+            warnings.append(f"Goabase / {country}: ungültigen Datensatz übersprungen.")
+    return events, list(dict.fromkeys(warnings))
+
 
 def parse_party(row):
     return Event.from_dict({

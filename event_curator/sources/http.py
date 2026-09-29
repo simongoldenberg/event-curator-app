@@ -46,7 +46,11 @@ class HttpClient:
                     raw = response.read(MAX_BYTES + 1)
                     if len(raw) > MAX_BYTES:
                         raise SourceError("Antwort überschreitet die Größenbegrenzung.")
-                    return raw.decode(response.headers.get_content_charset() or "utf-8", errors="replace")
+                    # Einige Clubseiten deklarieren einen alten Charset, senden aber UTF-8.
+                    try:
+                        return raw.decode("utf-8")
+                    except UnicodeDecodeError:
+                        return raw.decode(response.headers.get_content_charset() or "utf-8", errors="replace")
             except HTTPError as exc:
                 if exc.code == 404 and empty_on_404:
                     return ""
@@ -89,4 +93,3 @@ class HttpClient:
         if delay:
             time.sleep(max(0, delay - (time.monotonic() - self.last)))
         return self.get(url)
-

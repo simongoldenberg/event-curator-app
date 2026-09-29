@@ -13,6 +13,8 @@ from event_curator.sources.http import safe_url
 
 ASSETS = Path(__file__).resolve().parent
 WEEKDAYS = ("Mo", "Di", "Mi", "Do", "Fr", "Sa", "So")
+MAP_X_MIN, MAP_X_MAX = -5.5, 20.5
+MAP_Y_MIN, MAP_Y_MAX = 42.0, 55.5
 
 
 def safe_json(value):
@@ -28,10 +30,10 @@ def region_markers(radius_km):
     content = []
     payload = []
     for name, (lat, lon, _, _) in REGIONS.items():
-        x = (lon - 3) / 17.5 * 100
-        y = (55.5 - lat) / 10.5 * 100
-        diameter_x = 2 * radius_km / (111.2 * math.cos(math.radians(lat))) / 17.5 * 100
-        diameter_y = 2 * radius_km / 111.2 / 10.5 * 100
+        x = (lon - MAP_X_MIN) / (MAP_X_MAX - MAP_X_MIN) * 100
+        y = (MAP_Y_MAX - lat) / (MAP_Y_MAX - MAP_Y_MIN) * 100
+        diameter_x = 2 * radius_km / (111.2 * math.cos(math.radians(lat))) / (MAP_X_MAX - MAP_X_MIN) * 100
+        diameter_y = 2 * radius_km / 111.2 / (MAP_Y_MAX - MAP_Y_MIN) * 100
         content.append(f'<span class="region-ring" style="left:{x:.2f}%;top:{y:.2f}%;width:{diameter_x:.2f}%;height:{diameter_y:.2f}%"></span>')
         content.append(f'<span class="region-dot" style="left:{x:.2f}%;top:{y:.2f}%"></span>')
         content.append(f'<span class="region-label" style="left:{x:.2f}%;top:{y:.2f}%">{escape(name)}</span>')
@@ -55,7 +57,7 @@ def card(match, index):
         actions.append(f'<span class="event-meta">Quelle: {escape(event.source)}</span>')
     html = (
         f'<article class="event-card" id="{card_id}" data-category="{event.category}" '
-        f'data-region="{escape(match.region, quote=True)}" data-search="{escape(search, quote=True)}">'
+        f'data-region="{escape(match.region, quote=True)}" data-scope="{match.scope}" data-search="{escape(search, quote=True)}">'
         f'<div class="event-top"><span class="event-date">{WEEKDAYS[event.start.weekday()]}, {event.start:%d.%m. · %H:%M} Uhr</span>'
         f'<span class="event-score">{match.score} Punkte</span></div>'
         f'<h3>{escape(event.title)}</h3>'
@@ -65,22 +67,23 @@ def card(match, index):
         f'<div class="event-actions">{"".join(actions)}</div></article>'
     )
     data = {"id": card_id, "title": event.title, "city": event.city, "venue": event.venue,
-            "region": match.region, "category": event.category,
+            "region": match.region, "category": event.category, "scope": match.scope,
             "latitude": event.latitude, "longitude": event.longitude}
     return html, data
 
 
-def event_section(matches, category, heading, subtitle, number):
-    section_id = "live" if category == "live" else "parties"
+def event_section(matches, category, heading, subtitle, number, scope="regional"):
+    section_id = "reisen" if scope == "reise" else ("live" if category == "live" else "parties")
+    selected = [m for m in matches if m.scope == scope and (category == "all" or m.event.category == category)]
     markup = [f'<section class="section event-section" id="{section_id}" data-event-section>',
               '<div class="section-header"><div>',
               f'<span class="section-kicker">Rubrik {number}</span><h2>{heading}</h2></div>',
               f'<p>{subtitle}</p></div>',
-              f'<span class="pill"><span data-section-count>{sum(m.event.category == category for m in matches)}</span>&nbsp;Einträge</span>',
+              f'<span class="pill"><span data-section-count>{len(selected)}</span>&nbsp;Einträge</span>',
               '<div class="event-grid">']
     events = []
     for index, match in enumerate(matches):
-        if match.event.category == category:
+        if match in selected:
             html, item = card(match, index)
             markup.append(html)
             events.append(item)
@@ -88,24 +91,44 @@ def event_section(matches, category, heading, subtitle, number):
     return "".join(markup), events
 
 
-def render_dashboard(matches, month, warnings, statuses, demo=False, radius_km=DEFAULT_RADIUS_KM):
+def render_dashboard(matches, month, warnings, statuses, demo=False, radius_km=DEFAULT_RADIUS_KM, venues=()):
     css = (ASSETS / "dashboard.css").read_text(encoding="utf-8")
     script = (ASSETS / "dashboard.js").read_text(encoding="utf-8")
     svg = (ASSETS / "europe_map.svg").read_text(encoding="utf-8")
     rings, regions = region_markers(radius_km)
     live, live_events = event_section(matches, "live", "Konzerte & Live-Acts", "Künstler und Live-Sets mit belegtem Termin in deiner Nähe.", 1)
     parties, party_events = event_section(matches, "party", "Parties, Raves & Open Airs", "Clubnächte, Kollektive und offene Tanzflächen für die nächsten Wochen.", 2)
-    event_data = live_events + party_events
-    venue_count = len({(item["venue"], round(item["latitude"], 3), round(item["longitude"], 3))
-                       for item in event_data if item["latitude"] is not None and item["longitude"] is not None})
+    travel, travel_events = event_section(matches, "all", "Unterwegs in vier Ländern", "Deutschland, Frankreich, Schweiz und Österreich – passende Termine außerhalb deiner fünf 50-km-Regionen.", 3, "reise")
+    event_data = live_events + party_events + travel_events
+    venue_count = len(venues)
     chips = ['<button class="chip" type="button" data-region-filter="all" aria-pressed="true">Alle Orte</button>']
     chips.extend(f'<button class="chip" type="button" data-region-filter="{escape(name, quote=True)}" aria-pressed="false">{escape(name)}</button>' for name in REGIONS)
+    chips.extend(f'<button class="chip" type="button" data-region-filter="{name}" aria-pressed="false">{name}</button>'
+                 for name in ("Deutschland", "Frankreich", "Schweiz", "Österreich"))
     artist_cards = []
     for number, artist in enumerate(FEATURED_ARTISTS, 1):
         artist_cards.append('<article class="artist-card">'
                             f'<span class="number">0{number}</span><h3>{escape(artist.name)}</h3>'
                             f'<p>{escape(artist.style)} · {escape(artist.note)}</p>'
                             f'<a href="{link(artist.url)}" target="_blank" rel="noreferrer noopener">Musik & Profil ↗</a></article>')
+    venue_cards = []
+    for venue in venues:
+        artists = ", ".join(venue["artists"][:4])
+        extra = len(venue["artists"]) - 4
+        extra_text = f" + {extra} weitere" if extra > 0 else ""
+        artist_detail = (f'<details><summary>Alle {len(venue["artists"])} Artists anzeigen</summary>'
+                         f'<p>{escape(", ".join(venue["artists"]))}</p></details>') if extra > 0 else ""
+        venue_cards.append(
+            '<article class="research-card">'
+            f'<div class="research-card-top"><span class="place-city">{escape(venue["city"])} · {escape(venue["country"])}</span>'
+            '<span class="verified-mark">Artist-Beleg</span></div>'
+            f'<h3>{escape(venue["name"])}</h3>'
+            f'<p>Aus deiner Artist-Auswahl: <strong>{escape(artists)}</strong>'
+            f'{extra_text}</p>{artist_detail}'
+            f'<div class="research-links"><a href="{link(venue["url"])}" target="_blank" rel="noreferrer noopener">Programm ↗</a>'
+            f'<a href="{link(venue["evidence_url"])}" target="_blank" rel="noreferrer noopener">Auftrittsbeleg ↗</a></div></article>'
+        )
+    venue_markup = "".join(venue_cards) if venue_cards else '<p class="empty">Noch keine belegten Venues recherchiert.</p>'
     status_items = "".join(f"<li>{escape(item)}</li>" for item in statuses) or "<li>Keine Quelle abgefragt.</li>"
     warning_items = "".join(f"<li>{escape(item)}</li>" for item in dict.fromkeys(warnings)) or "<li>Keine zusätzlichen Hinweise.</li>"
     demo_message = "Beispielansicht mit erfundenen Events. Die Termine sind nicht buchbar." if demo else "Termine und Tickets vor dem Besuch bei der verlinkten Quelle prüfen."
@@ -122,16 +145,17 @@ def render_dashboard(matches, month, warnings, statuses, demo=False, radius_km=D
         '<a class="sr-only" href="#inhalt">Zum Inhalt springen</a>',
         '<header class="masthead"><div class="wrap"><div class="topline"><a class="brand" href="#start">◌ EVENT CURATOR</a>',
         f'<span class="edition">Ausgabe {escape(month)} · Version {APP_VERSION}</span></div>',
-        '<div class="hero" id="start"><span class="eyebrow">Deine Stadt. Dein Sound.</span>',
-        '<h1>Die nächste gute<br>Nacht ist nah.</h1>',
-        f'<p>Fünf Regionen, {radius_km:g} Kilometer Suchradius und Events, die zu deinem Sound passen. '
-        'Finde den Ort auf der Karte oder spring direkt zu einer Rubrik.</p>',
+        '<div class="hero" id="start"><span class="eyebrow">Dein Kompass für lange Nächte</span>',
+        '<h1>Finde deinen<br><em>nächsten Sound.</em></h1>',
+        f'<p>Downtempo, Organic und Melodic im Fokus. Fünf Städte mit {radius_km:g} km Umkreis – '
+        'und ein eigener Blick auf Deutschland, Frankreich, die Schweiz und Österreich.</p>',
         '<div class="hero-actions"><a class="button button-primary" href="#karte">↗ Karte entdecken</a>',
         '<a class="button button-ghost" href="#live">Konzerte ansehen</a>',
-        '<a class="button button-ghost" href="#parties">Parties ansehen</a></div></div></div></header>',
+        '<a class="button button-ghost" href="#reisen">Reisen ansehen</a></div></div></div></header>',
         '<nav class="quicknav" aria-label="Seitenbereiche"><div class="wrap">',
         '<a href="#ueberblick">Überblick</a><a href="#karte">Karte</a><a href="#live">Konzerte</a>',
-        '<a href="#parties">Parties</a><a href="#artists">Downtempo-Radar</a><a href="#quellen">Quellen</a>',
+        '<a href="#parties">Parties</a><a href="#reisen">Vier Länder</a><a href="#venues">Venues</a>',
+        '<a href="#artists">Downtempo-Radar</a><a href="#quellen">Quellen</a>',
         '</div></nav><main id="inhalt" class="wrap">',
         '<section class="intro" id="ueberblick"><div class="intro-grid"><div>',
         f'<span class="section-kicker">{escape(demo_badge)}</span><h2>Alles auf einen Blick.</h2>',
@@ -140,12 +164,12 @@ def render_dashboard(matches, month, warnings, statuses, demo=False, radius_km=D
         f'{escape(demo_message)}<br>Uhrzeiten stehen so im jeweiligen Quelleneintrag.</aside></div>',
         '<div class="summary">',
         f'<div class="stat"><strong>{len(matches)}</strong><span>Events im Monat</span></div>',
-        f'<div class="stat"><strong>{venue_count}</strong><span>Orte auf der Karte</span></div>',
-        f'<div class="stat"><strong>{len(REGIONS)}</strong><span>Suchregionen</span></div>',
+        f'<div class="stat"><strong>{venue_count}</strong><span>Venues mit Artist-Beleg</span></div>',
+        f'<div class="stat"><strong>{len(REGIONS)} + 4</strong><span>Städte + Reiseländer</span></div>',
         '</div></section>',
         '<section class="section" id="karte"><div class="section-header"><div>',
         '<span class="section-kicker">01 / Entdecken</span><h2>Wo passiert etwas?</h2></div>',
-        '<p>Klick auf einen Pin oder einen Ort rechts. Die Karte lässt sich ziehen und vergrößern; ein Event bringt dich direkt zur passenden Stelle.</p></div>',
+        '<p>Wähle eine Stadt oder ein Reiseland. Pins zeigen nur Events mit Koordinaten; alle belegten Clubs stehen weiter unten.</p></div>',
         '<div class="filters"><div>',
         '<div class="filter-group" aria-label="Region wählen">', "".join(chips), '</div>',
         '<div class="filter-group" style="margin-top:9px" aria-label="Eventart wählen">',
@@ -167,13 +191,17 @@ def render_dashboard(matches, month, warnings, statuses, demo=False, radius_km=D
         '<p><span id="venue-count">0</span> Pins · Zum Zentrieren antippen</p></div>',
         '<div class="venue-list" id="venue-list"></div></aside></div>',
         '<p class="empty" id="no-results" hidden>Keine Events für diese Auswahl. Probiere einen anderen Ort, Typ oder Suchbegriff.</p></section>',
-        live, parties,
+        live, parties, travel,
+        '<section class="section" id="venues"><div class="section-header"><div>',
+        '<span class="section-kicker">Venue-Scout</span><h2>Orte, die deinen Sound kennen.</h2></div>',
+        '<p>Frühere oder angekündigte Gigs aus deiner lokalen Artist-Auswahl. Folge dem Programm-Link für neue Termine; ein Auftrittsbeleg ist noch kein künftiges Event.</p></div>',
+        f'<div class="research-grid">{venue_markup}</div></section>',
         '<section class="section" id="artists"><div class="section-header"><div>',
-        '<span class="section-kicker">03 / Artist-Radar</span><h2>Langsamer. Tiefer. Wärmer.</h2></div>',
-        '<p>Vier öffentliche Künstlerprofile für Downtempo und Organic Sounds. Diese Empfehlungen sind keine bestätigten Auftritte und keine persönlichen Favoriten.</p></div>',
+        '<span class="section-kicker">Artist-Radar</span><h2>Langsamer. Tiefer. Wärmer.</h2></div>',
+        '<p>Öffentliche Künstlerprofile für Downtempo und Organic Sounds. Sie sind keine bestätigten Auftritte und keine persönlichen Favoriten.</p></div>',
         f'<div class="artist-grid">{"".join(artist_cards)}</div></section>',
         '<section class="section" id="quellen"><div class="section-header"><div>',
-        '<span class="section-kicker">04 / Transparenz</span><h2>Woher kommen die Funde?</h2></div>',
+        '<span class="section-kicker">Transparenz</span><h2>Woher kommen die Funde?</h2></div>',
         '<p>Fehler und Lücken bleiben sichtbar, damit du einen leeren Bericht richtig einordnen kannst.</p></div>',
         '<div class="sources"><div class="source-box"><h3>Abgefragte Quellen</h3><ul>', status_items, '</ul></div>',
         '<div class="source-box"><h3>Hinweise</h3><ul>', warning_items, '</ul></div></div></section>',

@@ -12,12 +12,13 @@ Lokale Python-CLI zur regionalen Eventsuche, zum Präferenzinterview und zur Ers
 - Python 3.11 oder neuer; nur Standardbibliothek und kein Build-Schritt. Die HTML-Oberfläche wird lokal generiert und öffnet sich auch ohne Webserver.
 - Daten, Profile, Zugangsdaten, Exporte und Laufstatus bleiben lokal. Keine persönlichen Daten in Git.
 - Live-Abfragen sind explizit; der Beispielmodus arbeitet offline mit fiktiven Events.
-- Quellenadapter liefern ein gemeinsames Eventmodell. Region und Datum werden anschließend zentral geprüft.
+- Quellenadapter liefern ein gemeinsames Eventmodell. Region, Reiseland und Datum werden anschließend zentral geprüft.
 - UI-Änderungen im Browser prüfen; die Oberfläche darf keine externen Karten-/Tracking-Dienste nachladen.
 
 ## Dateistruktur
 - `main.py`: CLI-Einstieg; `config.py`: öffentliche Standardwerte und lokale Konfiguration.
-- `event_curator/`: Datenmodelle, Interview, Matching, Reports und Quellenadapter.
+- `event_curator/`: Datenmodelle, Interview, Matching, Reports, lokaler Venue-Katalog und Quellenadapter.
+- `event_curator/venue_catalog.py`: lädt `data/user_venues.json` mit privaten Artist-/Venue-Belegen für Berichte.
 - `event_curator/discovery.py`: belegbasierte Artist-/Venue-Vorschläge und unbestätigte Gig-Hinweise.
 - `event_curator/spotify.py`: lokaler Spotify-Audioimport in eine ignorierte Artist-CSV; keine Rohdaten im Repository.
 - `event_curator/sources/clubs.py`: direkte Adapter für öffentliche Programme von Kater, Beate Uwe und Tanzhaus West.
@@ -26,7 +27,8 @@ Lokale Python-CLI zur regionalen Eventsuche, zum Präferenzinterview und zur Ers
 - `data/sample_artists.csv`: ausschließlich fiktive öffentliche Beispieldaten.
 - `scripts/`: GitHub-Setup, Datenschutzprüfung und monatliche Ausführung.
 - `tests/`: Offline-Tests mit synthetischen Daten.
-- `data/user_*`, `.env`, `exports/`: lokale, ignorierte Nutzerdaten.
+- `data/user_*`, `.env`, `exports/`: lokale, ignorierte Nutzerdaten; geprüfte Einzeltermine
+  in `data/user_verified_events.json` werden bei Live-Läufen zusätzlich geladen.
 
 ## Versionierung
 `event_curator/__init__.py` enthält `APP_VERSION`; CLI und Reports zeigen sie an.
@@ -35,7 +37,9 @@ Neue Versionen erst für stabile Releases; README und CHANGELOG dabei synchron h
 ## Entwicklung und neue Funktionen
 Direkt auf `develop` arbeiten; `main` enthält stabile Releases. PRs und Releases nur nach Bestätigung.
 Neue Quellen in `event_curator/sources/` ergänzen, CLI-Optionen in `event_curator/cli.py`.
-Gemeinsame Filter bleiben im Matching-Modul. Keine persönlichen Fixtures oder Keys in Tests.
+Gemeinsame Filter bleiben im Matching-Modul. Regionalringe und Reiseländer sind getrennte
+Rubriken; Reiseland-Events dürfen nur DE/FR/CH/AT und belastbare Städte enthalten.
+Keine persönlichen Fixtures oder Keys in Tests.
 Live-Berichte filtern nach belegtem Downtempo-/Melodic-Stil oder lokalen Artist-Treffern.
 Kartengrenzen stammen aus Natural Earth (Public Domain); die generierte SVG wird mit `scripts/build_map_asset.py` gebaut und im Repo mitgeführt.
 Vor Upload Datenschutzprüfung und Offline-Tests ausführen. Dokumentation auf Deutsch pflegen.

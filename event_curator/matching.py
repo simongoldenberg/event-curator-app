@@ -18,6 +18,7 @@ VENUE_HINTS = {
     "Die Bucht": ["open air", "downtempo"], "Fusion": ["festival", "collective", "kollektiv"],
     "Mystic Creatures": ["psy techno", "psytech", "hypnotic"], "Moyn": ["slow rave", "downtempo", "festival"],
 }
+TRAVEL_COUNTRIES = {"DE": "Deutschland", "FR": "Frankreich", "CH": "Schweiz", "AT": "Österreich"}
 # Die stärkste belegte Stilübereinstimmung zählt einmal. Ein bloßer Clubname ist kein Genrebeleg.
 FOCUS_STYLES = (
     ("organic downtempo", 38), ("downtempo", 35), ("downtechno", 35),
@@ -61,9 +62,10 @@ class Match:
     reasons: list[str]
     region: str
     distance: str
+    scope: str = "regional"
 
 
-def match_events(events, artists, profile, start, end, today=None, focused=False):
+def match_events(events, artists, profile, start, end, today=None, focused=False, travel=False):
     today = today or date.today()
     result, seen = [], set()
     for event in events:
@@ -73,8 +75,13 @@ def match_events(events, artists, profile, start, end, today=None, focused=False
         if any(term in normalized(event.status) for term in ("cancel", "postpon", "abgesagt", "verschoben")):
             continue
         region = region_match(event, profile)
+        scope = "regional"
         if not region:
-            continue
+            country = event.country.upper()
+            if not travel or country not in TRAVEL_COUNTRIES or not event.city.strip():
+                continue
+            region = (TRAVEL_COUNTRIES[country], "außerhalb der 50-km-Regionen")
+            scope = "reise"
         text = " ".join([event.title, event.description, event.venue, *event.tags, *event.artists])
         if any(contains(text, word) for word in profile.get("exclude", []) if word.strip()):
             continue
@@ -115,5 +122,5 @@ def match_events(events, artists, profile, start, end, today=None, focused=False
             continue
         if not reasons:
             reasons.append("Regionaler Fund ohne belegte Präferenzübereinstimmung")
-        result.append(Match(event, score, reasons, *region))
+        result.append(Match(event, score, reasons, *region, scope))
     return sorted(result, key=lambda m: (-m.score, m.event.start.isoformat(), m.event.title))

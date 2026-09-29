@@ -40,7 +40,7 @@ Kartenkacheln, Skripte oder Tracker von externen Servern.
 
 ### Die interaktive Übersicht bedienen
 
-- Oben zu **Karte**, **Konzerte**, **Parties**, **Downtempo-Radar** oder **Quellen** springen.
+- Oben zu **Karte**, **Konzerte**, **Parties**, **Vier Länder**, **Venues**, **Downtempo-Radar** oder **Quellen** springen.
 - Auf der Karte Orte, Eventart und Suchtext filtern. Die Eventkarten und Venue-Pins folgen derselben Auswahl.
 - Einen Pin oder Venue-Eintrag antippen, um Details zu sehen; per Plus/Minus zoomen oder die Karte ziehen.
 - In einer Eventkarte **Auf Karte** antippen, um zur Venue zu springen.
@@ -68,7 +68,7 @@ Ordner** an (mit Anführungszeichen bei Leerzeichen):
 Der Import liest nur `Streaming_History_Audio_*.json`. Videos, Podcasts, Hörbücher,
 als übersprungen markierte Stücke, Wiedergaben unter 30 Sekunden und doppelte Einträge
 fließen nicht ein. Neuere
-Wiedergaben zählen stärker; die 80 meistgehörten Artists landen in der ignorierten Datei
+Wiedergaben zählen stärker; die 200 meistgehörten Artists landen in der ignorierten Datei
 `data/user_artists.csv` mit gerundeten Hörstunden, Anzahl und letztem Hörjahr. Tracktitel,
 IP-Adressen und der rohe Verlauf werden nicht kopiert. Spotify liefert in diesen Dateien
 keine verlässlichen Genre-Tags; die App leitet daraus keine behaupteten Genres ab.
@@ -98,7 +98,9 @@ unerwünschte Begriffe ab. Es speichert erst nach Abschluss atomar in
 
 ## Regionen und Matching
 
-- Standard: **50 km Luftlinie** um jede der fünf Zielstädte; im Interview 1–200 km einstellbar.
+- Regionaler Teil: **50 km Luftlinie** um jede der fünf Zielstädte; im Interview 1–200 km einstellbar.
+- Die dritte Rubrik zeigt passende Events außerhalb dieser Kreise in **Deutschland, Frankreich,
+  der Schweiz und Österreich**. Die Länderabdeckung hängt von den erreichbaren Quellen ab.
 - Koordinaten werden per Haversine-Distanz geprüft. Grenznahe Orte sind zulässig,
   sofern sie innerhalb des Radius liegen.
 - Ohne Koordinaten muss der exakte Stadtname einschließlich bekannter Schreibvarianten
@@ -123,8 +125,8 @@ in `event_curator/matching.py`, keine Aussage über ein aktuelles Line-up.
 
 | Quelle | Anbindung | Voraussetzung / Grenze |
 |---|---|---|
-| Goabase | Öffentliche JSON-API, Region, Datum und Detaildaten | Mit `--live`; Schwerpunkt Goa/Psytrance, keine vollständige Techno-/Downtempo-Abdeckung |
-| [Kater](https://www.katerclub.de/), [Beate Uwe](https://beate-uwe.de/), [Tanzhaus West](https://tanzhaus-west.de/programm/) | Offizielle Programme einschließlich Datum, Beschreibung bzw. Line-up | Mit `--live` automatisch; Änderungen am Seitenaufbau werden als fehlende/fehlerhafte Quelle angezeigt |
+| Goabase | Öffentliche JSON-API, Region, vier Länder, Datum und regionale Detaildaten | Mit `--live`; Schwerpunkt Goa/Psytrance, keine vollständige Techno-/Downtempo-Abdeckung; Länderlisten auf 500 Einträge begrenzt |
+| [Kater](https://www.katerclub.de/), [Beate Uwe](https://beate-uwe.de/), [Ritter Butzke](https://club.ritterbutzke.com/events), [Tanzhaus West](https://tanzhaus-west.de/programm/) | Offizielle Programme einschließlich Datum, Beschreibung bzw. Line-up | Mit `--live` automatisch; Änderungen am Seitenaufbau werden als fehlende/fehlerhafte Quelle angezeigt |
 | Bandsintown | Künstler-Events | Eigene freigegebene App-ID, eigene Künstlerliste und `--include-bandsintown` |
 | Clubs, Festivals, regionale Seiten, Resident Advisor | Konfigurierbare HTTPS-Seiten, JSON-LD und begrenztes Nachladen von Eventlinks | Strukturierte Daten und erlaubter Abruf nötig; kein garantierter RA-Zugriff |
 | SoundCloud / Künstler-Websites | Öffentliche HTML-/Metabeschreibungen und verfügbare SoundCloud-Hydration | `--discover`; Gig-Hinweise bleiben unbestätigt, kein Login-/Schutzumgehen |
@@ -136,12 +138,29 @@ Die Implementierung richtet sich nach der offiziellen
 [Bandsintown-Dokumentation](https://help.artists.bandsintown.com/en/articles/9186477-api-documentation).
 Goabase-Quellenlinks bleiben im Digest erhalten. Abfrage-/Seitenlimits und Quellenausfälle
 erscheinen im Bericht. Ein fehlender Treffer bedeutet nicht, dass es keine Veranstaltung gibt.
-Die drei Clubseiten werden nur bei gewählten Regionen Berlin bzw. Frankfurt abgefragt.
+Die vier Clubseiten werden nur bei gewählten Regionen Berlin bzw. Frankfurt abgefragt.
 Mit `--no-clubs` lassen sie sich für einen Lauf auslassen. Beate-Uwes Reihe „Beate Barfuß“
 wird anhand der [Beschreibung des Clubs](https://beate-uwe.de/) als Downtempo markiert;
 bei anderen Clubnächten wird der Stil aus dem jeweiligen Programmtext oder bekannten Artists abgeleitet.
 Der frühere Berliner Club [Mensch Meier ist geschlossen](https://www.clubcommission.de/tschuessi-mensch-meier/)
 und wird daher nicht als aktuelle Terminquelle geführt.
+
+### Recherchierte Venues und geprüfte Termine
+
+`data/user_venues.json` enthält die lokal recherchierten Verbindungen zwischen eigenen Artists
+und Clubprogrammen. Die Datei bleibt ignoriert. Im HTML-Bericht erscheint ein Venue-Scout mit
+Links zum aktuellen Programm und zum konkreten Auftrittsbeleg. Ein früherer Auftritt gilt
+**nicht** als neuer Termin. Die erste Recherche gleicht die private 200er-Auswahl unter anderem
+mit den offiziellen Archiven von [Gretchen](https://www.gretchen-club.de/hall_of_fame/) und
+[Klunkerkranich](https://klunkerkranich.org/artistswhoplayedwithus/) ab. Im Gretchen-Archiv
+wurden 20 exakte Namen aus der 200er-Auswahl gefunden. Berlin ist am besten
+belegt; für Würzburg liegt noch kein verifizierter Artist-Club-Beleg vor.
+
+Einzelne sicher belegte kommende Konzerte stehen in `data/user_verified_events.json` und werden
+bei `--live` automatisch zusätzlich geladen. Vor der Anreise den verlinkten Termin prüfen.
+Diese lokale Datei wird ebenfalls nicht hochgeladen. Neue Clubs liefern dadurch nicht automatisch
+maschinenlesbare Events: Die Programm-Links sind der Einstieg zur Prüfung; JSON-LD-Seiten lassen
+sich wie unten beschrieben in `data/user_sources.json` konfigurieren.
 
 ### Bandsintown aktivieren
 
@@ -236,7 +255,8 @@ ebenfalls ein. Aus belegten Favoriten-Auftritten werden Venues abgeleitet. Weite
 aus geladenen Events derselben Venue erscheinen als Vorschläge, mit Datum und Quelle der
 Verbindung. Gemeinsame Venues beweisen noch keine musikalische Ähnlichkeit.
 
-Recherche darf über die fünf Zielregionen hinausgehen. **Der Event-Digest behält trotzdem seinen Regionsfilter.**
+Recherche darf über die fünf Zielregionen hinausgehen. Der Event-Digest trennt Treffer innerhalb
+der 50-km-Regionen und Fernziele in den vier Ländern.
 Ergebnisse: `data/user_discovery.json` und `exports/discovery.md`. Favoriten und Profil werden
 nicht automatisch verändert. SoundCloud-Gigtexte ohne belastbares Datum/Ort werden nicht
 zu bestätigten Events umgedeutet. Sie können nach Prüfung in die lokale Eventdatei übernommen werden.
@@ -354,6 +374,7 @@ event_curator/
   interview.py                Schrittweises Party-Interview
   matching.py                 Region, Datum, Relevanz, Ausschlüsse
   discovery.py                Auftrittshistorie, Artist-/Venue-Vorschläge, Gigtexte
+  venue_catalog.py            Ignorierte lokale Liste belegter Venues laden
   reports.py                  Sichere Markdown-/HTML-Ausgabe
   sources/                    HTTP, Bandsintown, Goabase, JSON-LD, lokale Beispiele
 data/sample_artists.csv        Öffentliche, fiktive Beispieldaten

@@ -1,5 +1,17 @@
 # Änderungsprotokoll
 
+## In Entwicklung — 2026-09-29
+
+### 🚀 Added
+- Eigene Reiserubrik für passende Termine in Deutschland, Frankreich, der Schweiz und Österreich.
+- Privater Venue-Scout mit Auftrittsbelegen und Programm-Links; lokal geprüfte Termine werden im Live-Lauf geladen.
+- Länderabfragen über die öffentliche Goabase-API und eine größere Offline-Karte.
+- Direkter Programmparser für Ritter Butzke in Berlin.
+
+### 🔄 Changed
+- Spotify-Import wertet die 200 wichtigsten statt 80 Artists aus.
+- Monatsansicht mit klarerem Einstieg, mobiler Navigation und kompakteren Venue-Karten überarbeitet.
+
 ## In Entwicklung — 2026-09-28
 
 ### 🚀 Added

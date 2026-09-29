@@ -26,8 +26,8 @@
 
   function projected(latitude, longitude) {
     return {
-      x: ((longitude - 3) / 17.5) * 100,
-      y: ((55.5 - latitude) / 10.5) * 100,
+      x: ((longitude + 5.5) / 26) * 100,
+      y: ((55.5 - latitude) / 13.5) * 100,
     };
   }
 

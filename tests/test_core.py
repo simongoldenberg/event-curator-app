@@ -13,12 +13,13 @@ from config import DEFAULT_RADIUS_KM, REGIONS
 from event_curator.models import Artist, Event, coordinate
 from event_curator.reports import write_digest
 from event_curator.sources.bandsintown import fetch_artist
-from event_curator.sources.clubs import CLUBS, beate_events, document, kater_events, tanzhaus_events
-from event_curator.sources.goabase import fetch_region
+from event_curator.sources.clubs import CLUBS, beate_events, document, kater_events, ritter_events, tanzhaus_events
+from event_curator.sources.goabase import fetch_country, fetch_region
 from event_curator.sources.http import SourceError, safe_url
 from event_curator.sources.structured import fetch_site
 from event_curator.storage import read_artists, read_json
-from event_curator.spotify import import_spotify
+from event_curator.spotify import MAX_ARTISTS, import_spotify
+from event_curator.ui.dashboard import render_dashboard
 from scripts.check_privacy import public_path, SECRET
 
 
@@ -35,6 +36,22 @@ def event(**overrides):
 
 
 class CoreTests(unittest.TestCase):
+    def test_two_hundred_artists_and_travel_scope(self):
+        self.assertEqual(MAX_ARTISTS, 200)
+        nearby = event(title="Organic Downtempo in Wien")
+        paris = event(title="Organic Downtempo in Paris", city="Paris", country="FR")
+        outside = event(title="Organic Downtempo in Madrid", city="Madrid", country="ES")
+        matches = match_events([nearby, paris, outside], [], {}, date(2030, 5, 1),
+                               date(2030, 6, 1), today=date(2030, 5, 1), focused=True, travel=True)
+        self.assertEqual({m.event.city: m.scope for m in matches}, {"Wien": "regional", "Paris": "reise"})
+        venue = {"name": "Testclub", "city": "Paris", "country": "FR", "url": "https://example.org/programme",
+                 "evidence_url": "https://example.org/beleg", "artists": ["Testartist"]}
+        html = render_dashboard(matches, "2030-05", [], [], venues=[venue])
+        self.assertIn('id="reisen"', html)
+        self.assertIn('id="venues"', html)
+        self.assertIn("Testclub", html)
+        self.assertIn("Unterwegs in vier Ländern", html)
+
     def test_regions_and_unknown_coordinates(self):
         self.assertEqual(region_match(event(), {})[0], "Wien")
         self.assertIsNone(region_match(event(city="Vienna", country="US"), {}))
@@ -158,6 +175,14 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(len(parsed), 1)
         self.assertEqual(parsed[0].start.hour, 23)
         self.assertIn("Melodic Techno", parsed[0].description)
+        ritter = '<div><a class="event-link" href="/event/test">Details</a><span>20.11.30</span><h2>Mollono.Bass</h2></div>'
+        class RitterClient:
+            def page(self, url):
+                return '<h1>Mollono.Bass</h1><p>20.11.2030 ab 22:00 Line Up: MOLLONO.BASS</p><p>For fans of: Oliver Koletzki</p>'
+        parsed, notes = ritter_events(RitterClient(), document(ritter), CLUBS[3], 2030, 11)
+        self.assertEqual(notes, [])
+        self.assertEqual(len(parsed), 1)
+        self.assertNotIn("Oliver Koletzki", parsed[0].description)
 
     def test_spotify_import_keeps_only_music_and_writes_private_artist_summary(self):
         with temporary_directory() as folder:

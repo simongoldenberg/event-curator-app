@@ -11,9 +11,10 @@ from urllib.request import urlopen
 SOURCE = "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson"
 TARGET = Path(__file__).resolve().parents[1] / "event_curator" / "ui" / "europe_map.svg"
 COUNTRIES = {"Germany", "Austria", "Switzerland", "France", "Belgium", "Netherlands", "Luxembourg",
-             "Czechia", "Czech Republic", "Poland", "Italy", "Slovenia", "Slovakia", "Hungary", "Denmark"}
-X_MIN, X_MAX = 3.0, 20.5
-Y_MIN, Y_MAX = 45.0, 55.5
+             "Czechia", "Czech Republic", "Poland", "Italy", "Slovenia", "Slovakia", "Hungary", "Denmark",
+             "United Kingdom", "Spain", "Liechtenstein"}
+X_MIN, X_MAX = -5.5, 20.5
+Y_MIN, Y_MAX = 42.0, 55.5
 WIDTH, HEIGHT = 1200, 740
 
 
