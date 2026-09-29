@@ -17,4 +17,5 @@ FEATURED_ARTISTS = (
     FeaturedArtist("Nico Stojan", "Deep House / Downtempo", "Melodischer, organischer Sound", "https://solselectas.bandcamp.com/album/summer-sol-iii"),
     FeaturedArtist("Caleesi", "Melodische Elektronik", "Verträumte Sets, solo und mit Sarah Kreis", "https://klunkerkranich.org/events/2025-07-12-mystic-tales-above-the-clouds-w-caleesi-mcfly-mia-kober-weam-ismael-mohii-danielle-pineapple-ezqizita/"),
     FeaturedArtist("Just Emma", "Deep / Melodic / Downtempo", "Verspielte, organische Clubmusik", "https://soundcloud.com/justemmaoffical"),
+    FeaturedArtist("Romare", "Downtempo / Electronica", "Sample-Collagen zwischen Groove und Melodie", "https://ninjatune.net/artist/romare"),
 )

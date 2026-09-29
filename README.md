@@ -126,7 +126,7 @@ in `event_curator/matching.py`, keine Aussage über ein aktuelles Line-up.
 | Quelle | Anbindung | Voraussetzung / Grenze |
 |---|---|---|
 | Goabase | Öffentliche JSON-API, Region, vier Länder, Datum und regionale Detaildaten | Mit `--live`; Schwerpunkt Goa/Psytrance, keine vollständige Techno-/Downtempo-Abdeckung; Länderlisten auf 500 Einträge begrenzt |
-| [Kater](https://www.katerclub.de/), [Beate Uwe](https://beate-uwe.de/), [Ritter Butzke](https://club.ritterbutzke.com/events), [Tanzhaus West](https://tanzhaus-west.de/programm/) | Offizielle Programme einschließlich Datum, Beschreibung bzw. Line-up | Mit `--live` automatisch; Änderungen am Seitenaufbau werden als fehlende/fehlerhafte Quelle angezeigt |
+| [Kater](https://www.katerclub.de/), [Beate Uwe](https://beate-uwe.de/), [Ritter Butzke](https://club.ritterbutzke.com/events), [Tanzhaus West](https://tanzhaus-west.de/programm/), [Gretchen](https://www.gretchen-club.de/dates.php) | Offizielle Programme einschließlich Datum, Beschreibung bzw. Line-up; Gretchen kennzeichnet Live-Auftritte gesondert | Mit `--live` automatisch; Änderungen am Seitenaufbau werden als fehlende/fehlerhafte Quelle angezeigt |
 | Bandsintown | Künstler-Events | Eigene freigegebene App-ID, eigene Künstlerliste und `--include-bandsintown` |
 | Clubs, Festivals, regionale Seiten, Resident Advisor | Konfigurierbare HTTPS-Seiten, JSON-LD und begrenztes Nachladen von Eventlinks | Strukturierte Daten und erlaubter Abruf nötig; kein garantierter RA-Zugriff |
 | SoundCloud / Künstler-Websites | Öffentliche HTML-/Metabeschreibungen und verfügbare SoundCloud-Hydration | `--discover`; Gig-Hinweise bleiben unbestätigt, kein Login-/Schutzumgehen |
@@ -138,7 +138,7 @@ Die Implementierung richtet sich nach der offiziellen
 [Bandsintown-Dokumentation](https://help.artists.bandsintown.com/en/articles/9186477-api-documentation).
 Goabase-Quellenlinks bleiben im Digest erhalten. Abfrage-/Seitenlimits und Quellenausfälle
 erscheinen im Bericht. Ein fehlender Treffer bedeutet nicht, dass es keine Veranstaltung gibt.
-Die vier Clubseiten werden nur bei gewählten Regionen Berlin bzw. Frankfurt abgefragt.
+Die fünf Clubseiten werden nur bei gewählten Regionen Berlin bzw. Frankfurt abgefragt.
 Mit `--no-clubs` lassen sie sich für einen Lauf auslassen. Beate-Uwes Reihe „Beate Barfuß“
 wird anhand der [Beschreibung des Clubs](https://beate-uwe.de/) als Downtempo markiert;
 bei anderen Clubnächten wird der Stil aus dem jeweiligen Programmtext oder bekannten Artists abgeleitet.
@@ -186,7 +186,7 @@ manuell auf Datum, Ort und Line-up geprüft werden müssen. Sie durchsucht ohne 
 Bandsintown-ID nicht automatisch jeden der 200 Artists einzeln. Künstlernamen werden ohne
 `--include-bandsintown` nicht an externe Dienste übertragen.
 
-Mit `-Discover` ruft die Aufgabe außerdem die sieben konfigurierten Clubseiten ohne
+Mit `-Discover` ruft die Aufgabe außerdem die acht konfigurierten Clubseiten ohne
 Artist-Suchparameter ab und vergleicht deren sichtbaren Text **lokal mit allen 200 Artists**
 und den öffentlichen Stilvorschlägen. Das Ergebnis steht in
 `exports/artist-scan-YYYY-MM.md`. Ein Namenshinweis kann auch ein alter Auftritt sein;

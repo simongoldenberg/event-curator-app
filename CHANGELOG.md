@@ -3,6 +3,8 @@
 ## In Entwicklung — 2026-09-29
 
 ### 🚀 Added
+- Gretchen als direkte Quelle für datierte Konzerte und Clubnächte; Live-Auftritte erscheinen in der Konzert-Rubrik.
+- Romare als öffentlich belegter Downtempo-/Electronica-Vorschlag im Artist-Radar.
 - Würzburg-Probe mit datierten Terminen aus offiziellen Clubprogrammen und direktem Quellenlink; weitere regionale Programme in der lokalen Recherchekonfiguration.
 - Lokale Windows-Monatsaufgabe eingerichtet; erfolgreiche Monate werden nur einmal verarbeitet.
 - Privater Abgleich aller 200 Artists mit allgemein abgerufenen Clubseiten; Namenshinweise bleiben von bestätigten Events getrennt.

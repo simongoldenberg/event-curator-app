@@ -38,6 +38,7 @@ def template_sources():
             {"name": "Posthalle Würzburg", "url": "https://www.posthalle.de/programm/", "enabled": True},
             {"name": "E-Werk Erlangen", "url": "https://www.e-werk.de/programm/partys/", "enabled": True},
             {"name": "Die Rakete Nürnberg", "url": "https://dierakete.com/programm/", "enabled": True},
+            {"name": "Gretchen Berlin", "url": "https://www.gretchen-club.de/dates.php", "enabled": True},
             {"name": "Kater (früher Kater Blau)", "url": "https://www.katerclub.de/", "enabled": True,
              "artist_section_start": "Residents", "artist_section_end": "Radio"},
             {"name": "Tanzhaus West", "url": "https://tanzhaus-west.de/", "enabled": True},

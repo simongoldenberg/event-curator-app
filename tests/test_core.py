@@ -13,7 +13,7 @@ from config import DEFAULT_RADIUS_KM, REGIONS, radius_for_region
 from event_curator.models import Artist, Event, coordinate
 from event_curator.reports import write_digest
 from event_curator.sources.bandsintown import fetch_artist
-from event_curator.sources.clubs import CLUBS, beate_events, document, kater_events, ritter_events, tanzhaus_events
+from event_curator.sources.clubs import CLUBS, beate_events, document, gretchen_events, kater_events, ritter_events, tanzhaus_events
 from event_curator.sources.goabase import fetch_country, fetch_region
 from event_curator.sources.http import SourceError, safe_url
 from event_curator.sources.structured import fetch_site
@@ -196,6 +196,16 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(notes, [])
         self.assertEqual(len(parsed), 1)
         self.assertNotIn("Oliver Koletzki", parsed[0].description)
+        gretchen = '''<div class="gig"><span class="date">Sa. <strong>03.10.2030</strong> Doors: 19.00 Show: 20.00</span>
+          <span class="title">Electronica, Jazz<h2><a href="detail.php?id=7">Romare + Wayne Snow</a></h2></span>
+          <span class="lineup">Romare *live*<br>Wayne Snow *live*</span></div>
+          <div class="gig"><span class="date">04.11.2030 Doors: 21.00</span><h2>Anderes Event</h2></div>'''
+        parsed = gretchen_events(document(gretchen), CLUBS[4], 2030, 10)
+        self.assertEqual(len(parsed), 1)
+        self.assertEqual(parsed[0].category, "live")
+        self.assertEqual(parsed[0].start.hour, 20)
+        self.assertEqual(parsed[0].tags, ["Electronica, Jazz"])
+        self.assertEqual(parsed[0].url, "https://www.gretchen-club.de/detail.php?id=7")
 
     def test_spotify_import_keeps_only_music_and_writes_private_artist_summary(self):
         with temporary_directory() as folder:

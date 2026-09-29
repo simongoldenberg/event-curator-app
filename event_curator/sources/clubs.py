@@ -17,6 +17,8 @@ CLUBS = (
      "latitude": 50.09803, "longitude": 8.6464, "parser": "tanzhaus"},
     {"name": "Ritter Butzke", "url": "https://club.ritterbutzke.com/events", "city": "Berlin", "country": "DE",
      "latitude": None, "longitude": None, "parser": "ritter"},
+    {"name": "Gretchen", "url": "https://www.gretchen-club.de/dates.php", "city": "Berlin", "country": "DE",
+     "latitude": 52.4975, "longitude": 13.3903, "parser": "gretchen"},
 )
 
 MONTHS = {name: number for number, name in enumerate(
@@ -84,11 +86,11 @@ def clean(node):
     return re.sub(r"\s+", " ", node.text()).strip() if node else ""
 
 
-def make_event(club, title, start, url, description="", tags=(), venue=None):
+def make_event(club, title, start, url, description="", tags=(), venue=None, category="party"):
     return Event.from_dict({"title": title, "start": start.isoformat(), "city": club["city"],
                             "country": club["country"], "venue": venue or club["name"],
                             "latitude": club["latitude"], "longitude": club["longitude"],
-                            "category": "party", "description": description[:4000], "tags": list(tags),
+                            "category": category, "description": description[:4000], "tags": list(tags),
                             "url": url}, club["name"])
 
 
@@ -212,6 +214,37 @@ def ritter_events(client, root, club, year, month):
     return events, warnings
 
 
+def gretchen_events(root, club, year, month):
+    """Liest datierte Live-Shows und Clubnächte aus dem offiziellen Gretchen-Programm."""
+    events = []
+    for gig in root.nodes(lambda n: n.has_class("gig")):
+        date_text = clean(gig.first(lambda n: n.has_class("date")))
+        stamp = re.search(r"\b(\d{1,2})\.(\d{1,2})\.(\d{4})\b", date_text)
+        if not stamp or (int(stamp[2]), int(stamp[3])) != (month, year):
+            continue
+        clock = re.search(r"\bShow:\s*(\d{1,2})[.:](\d{2})\b", date_text)
+        if clock is None:
+            clock = re.search(r"\bDoors:\s*(\d{1,2})[.:](\d{2})\b", date_text)
+        heading = gig.first(lambda n: n.tag == "h2")
+        title = clean(heading)
+        anchor = heading.first(lambda n: n.tag == "a") if heading else None
+        if not clock or not title or anchor is None:
+            continue
+        url = urljoin(club["url"], anchor.attrs.get("href", ""))
+        if not safe_url(url) or not url.startswith("https://www.gretchen-club.de/detail.php?id="):
+            continue
+        lineup = clean(gig.first(lambda n: n.has_class("lineup")))
+        title_section = gig.first(lambda n: n.has_class("title"))
+        genres = " ".join(part.strip() for part in title_section.children if isinstance(part, str)).strip() if title_section else ""
+        try:
+            start = datetime(year, month, int(stamp[1]), int(clock[1]), int(clock[2]))
+        except ValueError:
+            continue
+        category = "live" if re.search(r"\*live\*", lineup, re.I) else "party"
+        events.append(make_event(club, title, start, url, lineup, [genres] if genres else [], category=category))
+    return events
+
+
 def fetch_club(client, club, month):
     """Liest echte Terminangaben einer bekannten Primärquelle; keine Genre-Vermutung aus dem Clubnamen."""
     if club not in CLUBS:
@@ -224,6 +257,8 @@ def fetch_club(client, club, month):
         events, warnings = beate_events(root, club, year, number), []
     elif club["parser"] == "ritter":
         events, warnings = ritter_events(client, root, club, year, number)
+    elif club["parser"] == "gretchen":
+        events, warnings = gretchen_events(root, club, year, number), []
     else:
         events, warnings = tanzhaus_events(client, root, club, year, number)
     if not events:
