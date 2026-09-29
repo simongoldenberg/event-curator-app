@@ -121,6 +121,25 @@ Referenzen wie Kater Blau, Die Bucht, Fusion, Mystic Creatures und Moyn dienen d
 Interview als Orientierung. Ihre Zuordnung zu Begriffen ist eine editierbare Heuristik
 in `event_curator/matching.py`, keine Aussage über ein aktuelles Line-up.
 
+### Club- und Festival-Katalog
+
+Der HTML-Bericht zeigt jetzt einen eigenen Katalog mit **19 Berliner Club- und Kulturorten**,
+weiteren Quellen für die Zielregionen sowie [Bucht der Träumer](https://bucht-der-traeumer.de/),
+[Fusion](https://fusion-festival.de/de) und [Moyn](https://moynfestival.de/). Jeder Eintrag
+verlinkt das offizielle Programm und kennzeichnet die technische Abdeckung:
+
+- **Termine automatisch:** Ein direkter Adapter liest datierte Einträge für den Monatsbericht.
+- **Seitenabgleich:** Der monatliche Lauf ruft eine allgemeine Programmseite ab und gleicht
+  Artist-Namen nur lokal ab. Das Ergebnis ist ein unbestätigter Recherchehinweis.
+- **Programm-Link:** Im Katalog zum schnellen Nachsehen, noch ohne automatischen Abgleich.
+- **Archiv / Referenz:** historischer Stilhinweis ohne aktive Terminsuche. Moyn nennt die
+  Ausgabe 2026 auf der offiziellen Seite „The Last Days of Moyn“.
+
+Der Katalog ist bewusst vom **Venue-Scout** getrennt: Dort stehen nur Clubs, für die es
+einen konkreten Beleg zu einem Artist aus deiner lokalen Liste gibt. Ein Katalogeintrag
+oder ein früherer Auftritt erzeugt keine Eventkarte. Fusion und Bucht liegen außerhalb
+des Berliner 50-km-Rings und werden bei bestätigten Terminen der Reiserubrik zugeordnet.
+
 ## Quellen
 
 | Quelle | Anbindung | Voraussetzung / Grenze |
@@ -138,7 +157,7 @@ Die Implementierung richtet sich nach der offiziellen
 [Bandsintown-Dokumentation](https://help.artists.bandsintown.com/en/articles/9186477-api-documentation).
 Goabase-Quellenlinks bleiben im Digest erhalten. Abfrage-/Seitenlimits und Quellenausfälle
 erscheinen im Bericht. Ein fehlender Treffer bedeutet nicht, dass es keine Veranstaltung gibt.
-Die fünf Clubseiten werden nur bei gewählten Regionen Berlin bzw. Frankfurt abgefragt.
+Die fünf direkt angebundenen Clubseiten werden nur bei gewählten Regionen Berlin bzw. Frankfurt abgefragt.
 Mit `--no-clubs` lassen sie sich für einen Lauf auslassen. Beate-Uwes Reihe „Beate Barfuß“
 wird anhand der [Beschreibung des Clubs](https://beate-uwe.de/) als Downtempo markiert;
 bei anderen Clubnächten wird der Stil aus dem jeweiligen Programmtext oder bekannten Artists abgeleitet.

@@ -18,6 +18,7 @@ from .sources.local import load_local, sample_events
 from .sources.structured import fetch_site
 from .spotify import import_spotify
 from .storage import read_artists, read_json, write_json
+from .source_catalog import merge_research_pages, research_pages
 from .venue_catalog import read_venues
 
 
@@ -42,7 +43,7 @@ def template_sources():
             {"name": "Kater (früher Kater Blau)", "url": "https://www.katerclub.de/", "enabled": True,
              "artist_section_start": "Residents", "artist_section_end": "Radio"},
             {"name": "Tanzhaus West", "url": "https://tanzhaus-west.de/", "enabled": True},
-        ],
+        ] + research_pages(),
         "venue_sites": [],
     }
 
@@ -176,7 +177,7 @@ def run(args):
                     events.extend(found)
                     warnings.extend(notes)
                     failed |= bool(notes)
-            for page in settings.get("research_pages", []):
+            for page in merge_research_pages(settings.get("research_pages", [])):
                 if not page.get("enabled", True):
                     continue
                 try:

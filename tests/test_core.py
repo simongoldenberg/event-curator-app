@@ -19,6 +19,7 @@ from event_curator.sources.http import SourceError, safe_url
 from event_curator.sources.structured import fetch_site
 from event_curator.storage import read_artists, read_json
 from event_curator.spotify import MAX_ARTISTS, import_spotify
+from event_curator.source_catalog import catalog, merge_research_pages
 from event_curator.ui.dashboard import render_dashboard
 from scripts.check_privacy import public_path, SECRET
 from scripts.scan_artist_pages import name_hits
@@ -37,6 +38,18 @@ def event(**overrides):
 
 
 class CoreTests(unittest.TestCase):
+    def test_public_club_and_festival_catalog_keeps_source_levels(self):
+        entries = catalog()
+        by_name = {item["name"]: item for item in entries}
+        self.assertGreaterEqual(sum(item["city"] == "Berlin" for item in entries), 15)
+        self.assertEqual({"Fusion", "Bucht der Träumer", "Moyn"} & by_name.keys(),
+                         {"Fusion", "Bucht der Träumer", "Moyn"})
+        self.assertEqual(by_name["Moyn"]["mode"], "archiv")
+        self.assertFalse(by_name["Moyn"]["scan"])
+        pages = merge_research_pages([{"name": "Renate", "url": by_name["Renate"]["url"], "enabled": False}])
+        self.assertEqual(sum(page["url"] == by_name["Renate"]["url"] for page in pages), 1)
+        self.assertFalse(next(page for page in pages if page["url"] == by_name["Renate"]["url"])["enabled"])
+
     def test_private_artist_page_scan_ignores_scripts_and_partial_names(self):
         html = '<script>Secret Artist</script><p>El Búho tritt hier auf.</p><p>Annabelle</p>'
         hits = name_hits(html, [Artist("Secret Artist"), Artist("El Búho"), Artist("Anna")])
@@ -57,6 +70,8 @@ class CoreTests(unittest.TestCase):
         self.assertIn('id="venues"', html)
         self.assertIn("Testclub", html)
         self.assertIn("Unterwegs in vier Ländern", html)
+        self.assertIn('id="katalog"', html)
+        self.assertIn("Bucht der Träumer", html)
 
     def test_regions_and_unknown_coordinates(self):
         self.assertEqual(region_match(event(), {})[0], "Wien")

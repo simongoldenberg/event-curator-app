@@ -22,3 +22,18 @@ body{background:radial-gradient(circle at 92% 28%,#e9efe8 0,transparent 32%),var
 @media(max-width:1000px){.research-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:760px){.hero{padding-top:66px;padding-bottom:67px}.section{padding-top:78px}.intro{padding-top:55px}.research-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.map-frame{height:420px;min-height:420px}}
 @media(max-width:540px){.hero h1{font-size:clamp(2.85rem,13vw,4.6rem)}.hero-actions{gap:9px}.button{width:100%;justify-content:center}.topline{align-items:start;flex-direction:column;justify-content:center;padding:13px 0;gap:4px}.summary{grid-template-columns:1fr 1fr}.stat:last-child{grid-column:1/-1}.stat{padding:18px}.stat strong{font-size:2rem}.research-grid{grid-template-columns:1fr}.research-card{min-height:0}.event-card{min-height:0}.map-frame{height:345px;min-height:345px}.section-header{gap:12px}.section-header h2{font-size:2.15rem}}
+/* Offizielle Programmquellen bleiben sichtbar, auch wenn im gewählten Monat kein Event passt. */
+.catalog-note{background:#e8edde;color:#294f3e;border-radius:14px;padding:14px 18px;max-width:80ch;font-size:.88rem}
+.catalog-groups{display:grid;grid-template-columns:1.35fr 1fr;gap:24px;align-items:start}
+.catalog-group{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px}
+.catalog-group:first-child{grid-row:span 2}
+.catalog-group h3{display:flex;justify-content:space-between;align-items:center;margin:0 0 12px;font-family:Georgia,serif;font-size:1.35rem;font-weight:500}
+.catalog-group h3 span{font:700 .78rem system-ui,sans-serif;color:var(--muted)}
+.catalog-group ul{list-style:none;padding:0;margin:0}
+.catalog-item{display:grid;grid-template-columns:minmax(120px,1fr) auto auto;align-items:center;gap:10px;border-top:1px solid var(--line);padding:11px 0;font-size:.82rem}
+.catalog-item strong,.catalog-item small{display:block}.catalog-item small{color:var(--muted);margin-top:2px}
+.catalog-mode{color:#315a45;font-size:.74rem;white-space:nowrap}
+.catalog-item a{color:var(--forest);font-weight:750;text-decoration:underline;text-underline-offset:3px;white-space:nowrap}
+.catalog-item a:hover{color:#af573b}
+@media(max-width:920px){.catalog-groups{grid-template-columns:1fr}.catalog-group:first-child{grid-row:auto}}
+@media(max-width:540px){.catalog-group{padding:16px}.catalog-item{grid-template-columns:1fr auto;gap:2px 8px}.catalog-mode{grid-row:2;grid-column:1}.catalog-item a{grid-row:1 / span 2;grid-column:2}}

@@ -1,5 +1,12 @@
 # Änderungsprotokoll
 
+## Unveröffentlicht
+
+- Öffentlichen Club- und Festival-Katalog im HTML-Bericht ergänzt: 19 Berliner Orte,
+  weitere regionale Programme sowie Bucht, Fusion und Moyn mit klar gekennzeichneter
+  Suchabdeckung. Zusätzliche allgemeine Programmseiten fließen in den monatlichen
+  lokalen Artist-Abgleich ein; Hinweise bleiben von bestätigten Events getrennt.
+
 ## In Entwicklung — 2026-09-29
 
 ### 🚀 Added

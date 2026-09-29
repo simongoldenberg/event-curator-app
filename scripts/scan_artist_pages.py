@@ -13,6 +13,7 @@ from event_curator.featured import FEATURED_ARTISTS  # noqa: E402
 from event_curator.models import normalized  # noqa: E402
 from event_curator.sources.http import HttpClient, SourceError, safe_url  # noqa: E402
 from event_curator.storage import read_artists, read_json, write_private  # noqa: E402
+from event_curator.source_catalog import merge_research_pages  # noqa: E402
 
 
 class VisibleText(HTMLParser):
@@ -69,7 +70,8 @@ def main():
     settings = read_json(SOURCES, {})
     if not isinstance(settings, dict) or not isinstance(settings.get("research_pages", []), list):
         raise ValueError("Ungültige Quellenkonfiguration.")
-    results = scan(HttpClient(), settings.get("research_pages", []), artists + list(FEATURED_ARTISTS))
+    results = scan(HttpClient(), merge_research_pages(settings.get("research_pages", [])),
+                   artists + list(FEATURED_ARTISTS))
     private_names = {normalized(artist.name) for artist in artists}
     lines = [f"# Clubseiten-Abgleich {args.month}", "",
              f"{len(artists)} private Artists und {len(FEATURED_ARTISTS)} öffentliche Stilvorschläge lokal geprüft.",

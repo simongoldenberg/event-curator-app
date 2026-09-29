@@ -9,6 +9,7 @@ from urllib.parse import quote
 from config import DEFAULT_RADIUS_KM, REGIONS, radius_for_region
 from event_curator import APP_VERSION
 from event_curator.featured import FEATURED_ARTISTS
+from event_curator.source_catalog import catalog
 from event_curator.sources.http import safe_url
 
 ASSETS = Path(__file__).resolve().parent
@@ -130,6 +131,21 @@ def render_dashboard(matches, month, warnings, statuses, demo=False, radius_km=D
             f'<a href="{link(venue["evidence_url"])}" target="_blank" rel="noreferrer noopener">Auftrittsbeleg ↗</a></div></article>'
         )
     venue_markup = "".join(venue_cards) if venue_cards else '<p class="empty">Noch keine belegten Venues recherchiert.</p>'
+    source_groups = (("Berlin", "Berliner Clubs & Kulturorte", lambda item: item["city"] == "Berlin"),
+                     ("regionen", "Weitere Zielregionen", lambda item: item["city"] != "Berlin" and item["kind"] != "Festival"),
+                     ("festivals", "Festivals für Reisen", lambda item: item["kind"] == "Festival"))
+    source_rows = []
+    for key, title, selected in source_groups:
+        entries = [item for item in catalog() if selected(item)]
+        links = "".join(
+            '<li class="catalog-item">'
+            f'<span><strong>{escape(item["name"])}</strong><small>{escape(item["city"])} · {escape(item["kind"])}</small></span>'
+            f'<span class="catalog-mode">{escape({"direkt": "Termine automatisch", "recherche": "Seitenabgleich" if item["scan"] else "Programm-Link", "archiv": "Archiv / Referenz"}[item["mode"]])}</span>'
+            f'<a href="{link(item["url"])}" target="_blank" rel="noreferrer noopener" '
+            f'aria-label="Programm von {escape(item["name"], quote=True)} öffnen">Programm ↗</a></li>'
+            for item in entries)
+        source_rows.append(f'<div class="catalog-group" id="katalog-{key}"><h3>{title} <span>{len(entries)}</span></h3><ul>{links}</ul></div>')
+    catalog_markup = "".join(source_rows)
     status_items = "".join(f"<li>{escape(item)}</li>" for item in statuses) or "<li>Keine Quelle abgefragt.</li>"
     warning_items = "".join(f"<li>{escape(item)}</li>" for item in dict.fromkeys(warnings)) or "<li>Keine zusätzlichen Hinweise.</li>"
     demo_message = "Beispielansicht mit erfundenen Events. Die Termine sind nicht buchbar." if demo else "Termine und Tickets vor dem Besuch bei der verlinkten Quelle prüfen."
@@ -155,7 +171,7 @@ def render_dashboard(matches, month, warnings, statuses, demo=False, radius_km=D
         '<a class="button button-ghost" href="#reisen">Reisen ansehen</a></div></div></div></header>',
         '<nav class="quicknav" aria-label="Seitenbereiche"><div class="wrap">',
         '<a href="#ueberblick">Überblick</a><a href="#karte">Karte</a><a href="#live">Konzerte</a>',
-        '<a href="#parties">Parties</a><a href="#reisen">Vier Länder</a><a href="#venues">Venues</a>',
+        '<a href="#parties">Parties</a><a href="#reisen">Vier Länder</a><a href="#katalog">Clubs & Festivals</a><a href="#venues">Artist-Venues</a>',
         '<a href="#artists">Downtempo-Radar</a><a href="#quellen">Quellen</a>',
         '</div></nav><main id="inhalt" class="wrap">',
         '<section class="intro" id="ueberblick"><div class="intro-grid"><div>',
@@ -193,6 +209,11 @@ def render_dashboard(matches, month, warnings, statuses, demo=False, radius_km=D
         '<div class="venue-list" id="venue-list"></div></aside></div>',
         '<p class="empty" id="no-results" hidden>Keine Events für diese Auswahl. Probiere einen anderen Ort, Typ oder Suchbegriff.</p></section>',
         live, parties, travel,
+        '<section class="section" id="katalog"><div class="section-header"><div>',
+        '<h2>Clubs & Festivals im Blick.</h2></div>',
+        '<p>Offizielle Programme für die weitere Suche. Nur „Termine automatisch“ liefert direkt datierte Eventkarten. „Seitenabgleich“ prüft Artist-Namen lokal und liefert erst einmal Hinweise.</p></div>',
+        '<p class="catalog-note">Fusion und Bucht liegen außerhalb des Berliner 50-km-Rings. Moyn bleibt nach der Abschiedsausgabe 2026 als Referenz sichtbar.</p>',
+        f'<div class="catalog-groups">{catalog_markup}</div></section>',
         '<section class="section" id="venues"><div class="section-header"><div>',
         '<span class="section-kicker">Venue-Scout</span><h2>Orte, die deinen Sound kennen.</h2></div>',
         '<p>Frühere oder angekündigte Gigs aus deiner lokalen Artist-Auswahl. Folge dem Programm-Link für neue Termine; ein Auftrittsbeleg ist noch kein künftiges Event.</p></div>',
