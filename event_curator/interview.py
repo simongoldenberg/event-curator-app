@@ -30,7 +30,7 @@ def interview(path=PROFILE, input_fn=input, output=print):
     venues = choose("Welche Orte/Festivals dienen als Vibe-Referenz?", VENUES, input_fn, output)
     regions = choose("Welche Zielregionen? (Enter = alle fünf)", list(REGIONS), input_fn, output) or list(REGIONS)
     while True:
-        raw = input_fn(f"Suchradius je Region in km [Standard {DEFAULT_RADIUS_KM}, 1–200]: ").strip()
+        raw = input_fn(f"Suchradius in km [Standard {DEFAULT_RADIUS_KM}; Würzburg mindestens 100; 1–200]: ").strip()
         try:
             radius = int(raw) if raw else DEFAULT_RADIUS_KM
             if not 1 <= radius <= 200:

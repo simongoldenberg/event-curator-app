@@ -3,12 +3,17 @@
 ## In Entwicklung — 2026-09-29
 
 ### 🚀 Added
+- Würzburg-Probe mit datierten Terminen aus offiziellen Clubprogrammen und direktem Quellenlink; weitere regionale Programme in der lokalen Recherchekonfiguration.
+- Lokale Windows-Monatsaufgabe eingerichtet; erfolgreiche Monate werden nur einmal verarbeitet.
+- Privater Abgleich aller 200 Artists mit allgemein abgerufenen Clubseiten; Namenshinweise bleiben von bestätigten Events getrennt.
 - Eigene Reiserubrik für passende Termine in Deutschland, Frankreich, der Schweiz und Österreich.
 - Privater Venue-Scout mit Auftrittsbelegen und Programm-Links; lokal geprüfte Termine werden im Live-Lauf geladen.
 - Länderabfragen über die öffentliche Goabase-API und eine größere Offline-Karte.
 - Direkter Programmparser für Ritter Butzke in Berlin.
 
 ### 🔄 Changed
+- Würzburg-Suchradius auf mindestens 100 km Luftlinie erweitert; übrige Städte bleiben standardmäßig bei 50 km. Karte und Live-Abfrage verwenden dieselbe Regel.
+- Lokale Eventimporte nutzen denselben Musikfokus wie Live-Berichte.
 - Spotify-Import wertet die 200 wichtigsten statt 80 Artists aus.
 - Monatsansicht mit klarerem Einstieg, mobiler Navigation und kompakteren Venue-Karten überarbeitet.
 

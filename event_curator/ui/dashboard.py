@@ -6,7 +6,7 @@ import math
 from pathlib import Path
 from urllib.parse import quote
 
-from config import DEFAULT_RADIUS_KM, REGIONS
+from config import DEFAULT_RADIUS_KM, REGIONS, radius_for_region
 from event_curator import APP_VERSION
 from event_curator.featured import FEATURED_ARTISTS
 from event_curator.sources.http import safe_url
@@ -30,14 +30,15 @@ def region_markers(radius_km):
     content = []
     payload = []
     for name, (lat, lon, _, _) in REGIONS.items():
+        local_radius = radius_for_region(name, {"radius_km": radius_km})
         x = (lon - MAP_X_MIN) / (MAP_X_MAX - MAP_X_MIN) * 100
         y = (MAP_Y_MAX - lat) / (MAP_Y_MAX - MAP_Y_MIN) * 100
-        diameter_x = 2 * radius_km / (111.2 * math.cos(math.radians(lat))) / (MAP_X_MAX - MAP_X_MIN) * 100
-        diameter_y = 2 * radius_km / 111.2 / (MAP_Y_MAX - MAP_Y_MIN) * 100
+        diameter_x = 2 * local_radius / (111.2 * math.cos(math.radians(lat))) / (MAP_X_MAX - MAP_X_MIN) * 100
+        diameter_y = 2 * local_radius / 111.2 / (MAP_Y_MAX - MAP_Y_MIN) * 100
         content.append(f'<span class="region-ring" style="left:{x:.2f}%;top:{y:.2f}%;width:{diameter_x:.2f}%;height:{diameter_y:.2f}%"></span>')
         content.append(f'<span class="region-dot" style="left:{x:.2f}%;top:{y:.2f}%"></span>')
         content.append(f'<span class="region-label" style="left:{x:.2f}%;top:{y:.2f}%">{escape(name)}</span>')
-        payload.append({"name": name, "latitude": lat, "longitude": lon})
+        payload.append({"name": name, "latitude": lat, "longitude": lon, "radius_km": local_radius})
     return "".join(content), payload
 
 
@@ -98,7 +99,7 @@ def render_dashboard(matches, month, warnings, statuses, demo=False, radius_km=D
     rings, regions = region_markers(radius_km)
     live, live_events = event_section(matches, "live", "Konzerte & Live-Acts", "Künstler und Live-Sets mit belegtem Termin in deiner Nähe.", 1)
     parties, party_events = event_section(matches, "party", "Parties, Raves & Open Airs", "Clubnächte, Kollektive und offene Tanzflächen für die nächsten Wochen.", 2)
-    travel, travel_events = event_section(matches, "all", "Unterwegs in vier Ländern", "Deutschland, Frankreich, Schweiz und Österreich – passende Termine außerhalb deiner fünf 50-km-Regionen.", 3, "reise")
+    travel, travel_events = event_section(matches, "all", "Unterwegs in vier Ländern", "Deutschland, Frankreich, Schweiz und Österreich – passende Termine außerhalb deiner lokalen Suchregionen.", 3, "reise")
     event_data = live_events + party_events + travel_events
     venue_count = len(venues)
     chips = ['<button class="chip" type="button" data-region-filter="all" aria-pressed="true">Alle Orte</button>']
@@ -147,7 +148,7 @@ def render_dashboard(matches, month, warnings, statuses, demo=False, radius_km=D
         f'<span class="edition">Ausgabe {escape(month)} · Version {APP_VERSION}</span></div>',
         '<div class="hero" id="start"><span class="eyebrow">Dein Kompass für lange Nächte</span>',
         '<h1>Finde deinen<br><em>nächsten Sound.</em></h1>',
-        f'<p>Downtempo, Organic und Melodic im Fokus. Fünf Städte mit {radius_km:g} km Umkreis – '
+        f'<p>Downtempo, Organic und Melodic im Fokus. Würzburg mit {max(100, radius_km):g} km Umkreis, vier weitere Städte mit {radius_km:g} km – '
         'und ein eigener Blick auf Deutschland, Frankreich, die Schweiz und Österreich.</p>',
         '<div class="hero-actions"><a class="button button-primary" href="#karte">↗ Karte entdecken</a>',
         '<a class="button button-ghost" href="#live">Konzerte ansehen</a>',
@@ -206,7 +207,7 @@ def render_dashboard(matches, month, warnings, statuses, demo=False, radius_km=D
         '<div class="sources"><div class="source-box"><h3>Abgefragte Quellen</h3><ul>', status_items, '</ul></div>',
         '<div class="source-box"><h3>Hinweise</h3><ul>', warning_items, '</ul></div></div></section>',
         '</main><footer class="footer"><div class="wrap"><span>Event Curator · lokal erstellt · persönliche Daten bleiben außerhalb von Git</span>',
-        f'<span>Erstellt {datetime.now():%d.%m.%Y %H:%M} · Radius {radius_km:g} km</span></div></footer>',
+        f'<span>Erstellt {datetime.now():%d.%m.%Y %H:%M} · Würzburg {max(100, radius_km):g} km · sonst {radius_km:g} km</span></div></footer>',
         f'<script id="dashboard-data" type="application/json">{payload}</script><script>{script}</script></body></html>',
     ]
     return "".join(sections)

@@ -13,6 +13,7 @@ Lokale Python-CLI zur regionalen Eventsuche, zum Präferenzinterview und zur Ers
 - Daten, Profile, Zugangsdaten, Exporte und Laufstatus bleiben lokal. Keine persönlichen Daten in Git.
 - Live-Abfragen sind explizit; der Beispielmodus arbeitet offline mit fiktiven Events.
 - Quellenadapter liefern ein gemeinsames Eventmodell. Region, Reiseland und Datum werden anschließend zentral geprüft.
+- Würzburg hat mindestens 100 km Suchradius, die anderen vier Städte standardmäßig 50 km; `config.radius_for_region` ist die gemeinsame Regel für Abfrage, Matching und Karte.
 - UI-Änderungen im Browser prüfen; die Oberfläche darf keine externen Karten-/Tracking-Dienste nachladen.
 
 ## Dateistruktur
@@ -21,14 +22,16 @@ Lokale Python-CLI zur regionalen Eventsuche, zum Präferenzinterview und zur Ers
 - `event_curator/venue_catalog.py`: lädt `data/user_venues.json` mit privaten Artist-/Venue-Belegen für Berichte.
 - `event_curator/discovery.py`: belegbasierte Artist-/Venue-Vorschläge und unbestätigte Gig-Hinweise.
 - `event_curator/spotify.py`: lokaler Spotify-Audioimport in eine ignorierte Artist-CSV; keine Rohdaten im Repository.
-- `event_curator/sources/clubs.py`: direkte Adapter für öffentliche Programme von Kater, Beate Uwe und Tanzhaus West.
+- `event_curator/sources/clubs.py`: direkte Adapter für öffentliche Programme von Kater, Beate Uwe, Ritter Butzke und Tanzhaus West.
 - `event_curator/ui/`: HTML/CSS/JavaScript und lokale Kartenbasis für den interaktiven Report.
 - `event_curator/featured.py`: kleine öffentliche Downtempo-Entdeckungsliste, getrennt von persönlichen Favoriten.
 - `data/sample_artists.csv`: ausschließlich fiktive öffentliche Beispieldaten.
 - `scripts/`: GitHub-Setup, Datenschutzprüfung und monatliche Ausführung.
+- `scripts/scan_artist_pages.py`: lädt allgemeine Clubseiten und gleicht private Artist-Namen ausschließlich lokal ab; Hinweise sind keine bestätigten Gigs.
 - `tests/`: Offline-Tests mit synthetischen Daten.
 - `data/user_*`, `.env`, `exports/`: lokale, ignorierte Nutzerdaten; geprüfte Einzeltermine
   in `data/user_verified_events.json` werden bei Live-Läufen zusätzlich geladen.
+- `data/user_sources.json`: lokale, ignorierte Liste weiterer Club- und Rechercheseiten.
 
 ## Versionierung
 `event_curator/__init__.py` enthält `APP_VERSION`; CLI und Reports zeigen sie an.

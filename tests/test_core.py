@@ -9,7 +9,7 @@ from event_curator.cli import month_bounds, main
 from event_curator.discovery import venue_network, page_hints
 from event_curator.interview import interview, validate_profile
 from event_curator.matching import match_events, region_match
-from config import DEFAULT_RADIUS_KM, REGIONS
+from config import DEFAULT_RADIUS_KM, REGIONS, radius_for_region
 from event_curator.models import Artist, Event, coordinate
 from event_curator.reports import write_digest
 from event_curator.sources.bandsintown import fetch_artist
@@ -21,6 +21,7 @@ from event_curator.storage import read_artists, read_json
 from event_curator.spotify import MAX_ARTISTS, import_spotify
 from event_curator.ui.dashboard import render_dashboard
 from scripts.check_privacy import public_path, SECRET
+from scripts.scan_artist_pages import name_hits
 
 
 def temporary_directory():
@@ -36,6 +37,11 @@ def event(**overrides):
 
 
 class CoreTests(unittest.TestCase):
+    def test_private_artist_page_scan_ignores_scripts_and_partial_names(self):
+        html = '<script>Secret Artist</script><p>El Búho tritt hier auf.</p><p>Annabelle</p>'
+        hits = name_hits(html, [Artist("Secret Artist"), Artist("El Búho"), Artist("Anna")])
+        self.assertEqual(hits, ["El Búho"])
+
     def test_two_hundred_artists_and_travel_scope(self):
         self.assertEqual(MAX_ARTISTS, 200)
         nearby = event(title="Organic Downtempo in Wien")
@@ -68,8 +74,15 @@ class CoreTests(unittest.TestCase):
     def test_five_regions_and_fifty_kilometre_default(self):
         self.assertEqual(DEFAULT_RADIUS_KM, 50)
         self.assertEqual(set(REGIONS), {"Würzburg", "Freiburg", "Wien", "Berlin", "Frankfurt"})
+        self.assertEqual(radius_for_region("Würzburg", {}), 100)
+        self.assertEqual(radius_for_region("Berlin", {}), 50)
+        self.assertEqual(radius_for_region("Würzburg", {"radius_km": 120}), 120)
         self.assertEqual(region_match(event(city="Frankfurt am Main", country="DE"), {})[0], "Frankfurt")
         self.assertIsNone(region_match(event(city="Testort", country="DE", latitude=48.58, longitude=7.8421), {}))
+        self.assertEqual(region_match(event(city="Nürnberg", country="DE", latitude=49.4521,
+                                            longitude=11.0767), {})[0], "Würzburg")
+        self.assertIsNone(region_match(event(city="Regensburg", country="DE", latitude=49.0134,
+                                              longitude=12.1016), {}))
 
     def test_matching_dates_cancelled_exclusions_and_dedup(self):
         events = [event(title="Party", tags=["Downtempo"]), event(title="Party", tags=["Downtempo"]),

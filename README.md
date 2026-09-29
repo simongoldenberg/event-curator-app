@@ -98,7 +98,7 @@ unerwünschte Begriffe ab. Es speichert erst nach Abschluss atomar in
 
 ## Regionen und Matching
 
-- Regionaler Teil: **50 km Luftlinie** um jede der fünf Zielstädte; im Interview 1–200 km einstellbar.
+- Regionaler Teil: **100 km Luftlinie um Würzburg**, **50 km** um Freiburg, Wien, Berlin und Frankfurt. Ein größerer persönlicher Radius (1–200 km) gilt auch für Würzburg; dort bleibt das Minimum 100 km. Dadurch können Erlangen und Nürnberg in der Würzburg-Rubrik erscheinen.
 - Die dritte Rubrik zeigt passende Events außerhalb dieser Kreise in **Deutschland, Frankreich,
   der Schweiz und Österreich**. Die Länderabdeckung hängt von den erreichbaren Quellen ab.
 - Koordinaten werden per Haversine-Distanz geprüft. Grenznahe Orte sind zulässig,
@@ -161,6 +161,36 @@ bei `--live` automatisch zusätzlich geladen. Vor der Anreise den verlinkten Ter
 Diese lokale Datei wird ebenfalls nicht hochgeladen. Neue Clubs liefern dadurch nicht automatisch
 maschinenlesbare Events: Die Programm-Links sind der Einstieg zur Prüfung; JSON-LD-Seiten lassen
 sich wie unten beschrieben in `data/user_sources.json` konfigurieren.
+
+### Würzburg-Probe und monatliche Routine
+
+Die Probe vom 29.09.2026 prüfte das offizielle [Dornheim-Programm](https://waldschaenke-dornheim.de/club/),
+das [E-Werk Erlangen](https://www.e-werk.de/programm/partys/),
+[Die Rakete Nürnberg](https://dierakete.com/programm/),
+den [Airport Würzburg](https://club-airport.com/) und die [Posthalle](https://www.posthalle.de/programm/).
+Passende, datierte Termine wurden lokal in `data/user_verified_events.json` erfasst. Für einen
+Bericht nur aus diesen einzeln belegten Daten:
+
+```powershell
+& .\.venv\Scripts\python.exe main.py --events data\user_verified_events.json --month 2026-10
+```
+
+Die lokale Windows-Aufgabe `EventCurator-Monthly` startet die Live-Abfragen um 9 Uhr. Sie
+prüft täglich, ob der laufende Monat schon erfolgreich verarbeitet wurde, und schreibt dann
+nur einmal einen Digest; nach Quellenausfällen versucht sie es erneut. Sie wurde mit
+`scripts/install_monthly_task.ps1 -PythonExe .\.venv\Scripts\python.exe -Discover`
+eingerichtet. Die zusätzlichen Würzburg-/Umkreis-Programme liegen als allgemeine
+Recherche-Seiten in der ignorierten `data/user_sources.json`. Die automatische Recherche
+wertet nur maschinenlesbare Termine direkt aus; andere Clubseiten liefern Hinweise, die
+manuell auf Datum, Ort und Line-up geprüft werden müssen. Sie durchsucht ohne eigene
+Bandsintown-ID nicht automatisch jeden der 200 Artists einzeln. Künstlernamen werden ohne
+`--include-bandsintown` nicht an externe Dienste übertragen.
+
+Mit `-Discover` ruft die Aufgabe außerdem die sieben konfigurierten Clubseiten ohne
+Artist-Suchparameter ab und vergleicht deren sichtbaren Text **lokal mit allen 200 Artists**
+und den öffentlichen Stilvorschlägen. Das Ergebnis steht in
+`exports/artist-scan-YYYY-MM.md`. Ein Namenshinweis kann auch ein alter Auftritt sein;
+erst nach Prüfung von Datum, Stadt und Line-up wird er als Termin übernommen.
 
 ### Bandsintown aktivieren
 
@@ -256,7 +286,7 @@ aus geladenen Events derselben Venue erscheinen als Vorschläge, mit Datum und Q
 Verbindung. Gemeinsame Venues beweisen noch keine musikalische Ähnlichkeit.
 
 Recherche darf über die fünf Zielregionen hinausgehen. Der Event-Digest trennt Treffer innerhalb
-der 50-km-Regionen und Fernziele in den vier Ländern.
+der lokalen Suchregionen (Würzburg 100 km, sonst standardmäßig 50 km) und Fernziele in den vier Ländern.
 Ergebnisse: `data/user_discovery.json` und `exports/discovery.md`. Favoriten und Profil werden
 nicht automatisch verändert. SoundCloud-Gigtexte ohne belastbares Datum/Ort werden nicht
 zu bestätigten Events umgedeutet. Sie können nach Prüfung in die lokale Eventdatei übernommen werden.

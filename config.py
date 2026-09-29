@@ -16,6 +16,12 @@ REGIONS = {
     "Frankfurt": (50.1109, 8.6821, "DE", ("frankfurt", "frankfurt am main")),
 }
 DEFAULT_RADIUS_KM = 50
+REGION_MIN_RADII_KM = {"Würzburg": 100}
+
+
+def radius_for_region(name, profile):
+    """Würzburg gezielt ausweiten; ein größerer persönlicher Radius bleibt erhalten."""
+    return max(profile.get("radius_km", DEFAULT_RADIUS_KM), REGION_MIN_RADII_KM.get(name, 0))
 
 
 def load_env(path=ROOT / ".env"):

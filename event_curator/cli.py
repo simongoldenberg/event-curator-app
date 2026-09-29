@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 import re
 import sys
-from config import DATA, DEFAULT_RADIUS_KM, EXPORTS, PROFILE, REGIONS, ROOT, SOURCES, STATE, load_env
+from config import DATA, DEFAULT_RADIUS_KM, EXPORTS, PROFILE, REGIONS, ROOT, SOURCES, STATE, load_env, radius_for_region
 from . import APP_VERSION
 from .discovery import page_hints, write_discovery
 from .interview import interview, validate_profile
@@ -33,6 +33,11 @@ def template_sources():
     return {
         "sites": [],
         "research_pages": [
+            {"name": "Waldschänke Dornheim Würzburg", "url": "https://waldschaenke-dornheim.de/club/", "enabled": True},
+            {"name": "Airport Würzburg", "url": "https://club-airport.com/", "enabled": True},
+            {"name": "Posthalle Würzburg", "url": "https://www.posthalle.de/programm/", "enabled": True},
+            {"name": "E-Werk Erlangen", "url": "https://www.e-werk.de/programm/partys/", "enabled": True},
+            {"name": "Die Rakete Nürnberg", "url": "https://dierakete.com/programm/", "enabled": True},
             {"name": "Kater (früher Kater Blau)", "url": "https://www.katerclub.de/", "enabled": True,
              "artist_section_start": "Residents", "artist_section_end": "Radio"},
             {"name": "Tanzhaus West", "url": "https://tanzhaus-west.de/", "enabled": True},
@@ -112,7 +117,7 @@ def run(args):
                     warnings.append(f"Clubprogramm / {club['name']}: {exc if isinstance(exc, SourceError) else 'Ungültiges Datenformat.'}")
         for region in profile.get("regions") or list(REGIONS):
             try:
-                found, notes = fetch_region(client, region, args.month, profile.get("radius_km", DEFAULT_RADIUS_KM))
+                found, notes = fetch_region(client, region, args.month, radius_for_region(region, profile))
                 events.extend(found)
                 warnings.extend(notes)
                 failed |= bool(notes)
@@ -162,8 +167,8 @@ def run(args):
         if args.discover:
             # Nur bekannte, lokal konfigurierte Club-Domains nachladen: keine erratenen Websites.
             from .discovery import venue_network
-            venues, _ = venue_network(events, artists)
-            known = {v["venue"].casefold() for v in venues}
+            discovered_venues, _ = venue_network(events, artists)
+            known = {v["venue"].casefold() for v in discovered_venues}
             for site in settings.get("venue_sites", []):
                 if site.get("enabled", True) and site.get("venue", "").casefold() in known:
                     found, notes = fetch_site(client, site)
@@ -179,7 +184,7 @@ def run(args):
                     warnings.append(f"{page.get('name', 'Recherchequelle')}: {exc if isinstance(exc, SourceError) else 'Ungültige Konfiguration.'}")
                     failed = True
         if not settings.get("sites"):
-            warnings.append("Keine weiteren Club-/Regional-/RA-Seiten konfiguriert. Zusätzliche Venues können lokal ergänzt werden.")
+            warnings.append("Keine zusätzlichen maschinenlesbaren Event-Seiten konfiguriert; Recherche-Seiten liefern nur Hinweise.")
     output = Path(args.output).resolve()
     if not output.is_relative_to(EXPORTS.resolve()):
         raise ValueError("Berichte dürfen zum Schutz vor Git-Uploads nur unter exports/ liegen.")
@@ -188,7 +193,7 @@ def run(args):
     # Die fiktive Beispiel-CSV darf echte Live-Termine nicht über beliebige Genres hochstufen.
     matching_artists = [] if args.live and artist_path.resolve() == (DATA / "sample_artists.csv").resolve() else artists
     matches = match_events(events, matching_artists, profile, start, end, today=start if demo else None,
-                           focused=args.live, travel=args.live or bool(args.events))
+                           focused=args.live or bool(args.events), travel=args.live or bool(args.events))
     paths = write_digest(matches, args.month, output, warnings, statuses, demo,
                          profile.get("radius_km", DEFAULT_RADIUS_KM), venues)
     print(f"Event Curator {APP_VERSION}: {len(matches)} Funde, {len(venues)} recherchierte Venues")

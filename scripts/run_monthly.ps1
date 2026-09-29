@@ -6,5 +6,10 @@ $cliArgs = @('main.py', '--live', '--monthly')
 if ($Bandsintown) { $cliArgs += '--include-bandsintown' }
 if ($Discover) { $cliArgs += '--discover' }
 & $PythonExe @cliArgs
-exit $LASTEXITCODE
-
+$digestCode = $LASTEXITCODE
+if ($Discover) {
+    & $PythonExe 'scripts/scan_artist_pages.py'
+    $scanCode = $LASTEXITCODE
+    if ($scanCode -ne 0) { exit $scanCode }
+}
+exit $digestCode

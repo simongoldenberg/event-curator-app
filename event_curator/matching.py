@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import date
 from math import asin, cos, radians, sin, sqrt
-from config import REGIONS, DEFAULT_RADIUS_KM
+from config import REGIONS, radius_for_region
 from .featured import FEATURED_ARTISTS
 from .models import normalized
 
@@ -24,7 +24,7 @@ FOCUS_STYLES = (
     ("organic downtempo", 38), ("downtempo", 35), ("downtechno", 35),
     ("ketapop", 35), ("slow rave", 32), ("slow house", 30),
     ("melodic techno", 32), ("melodic house", 28),
-    ("organic house", 28), ("hypnotic techno", 25),
+    ("organic house", 28), ("hypnotic techno", 25), ("psy techno", 25),
     ("melodic", 18), ("deep house", 18),
 )
 
@@ -45,7 +45,7 @@ def region_match(event, profile):
         lat, lon, country, aliases = REGIONS[name]
         if event.latitude is not None and event.longitude is not None:
             distance = distance_km(lat, lon, event.latitude, event.longitude)
-            if distance <= profile.get("radius_km", DEFAULT_RADIUS_KM):
+            if distance <= radius_for_region(name, profile):
                 matches.append((distance, name, f"{distance:.0f} km Luftlinie"))
         elif event.country in (country, {"DE": "GERMANY", "AT": "AUSTRIA"}[country]) and normalized(event.city) in {normalized(a) for a in aliases}:
             matches.append((0, name, "Stadtname + Land; Entfernung unbekannt"))
@@ -80,7 +80,7 @@ def match_events(events, artists, profile, start, end, today=None, focused=False
             country = event.country.upper()
             if not travel or country not in TRAVEL_COUNTRIES or not event.city.strip():
                 continue
-            region = (TRAVEL_COUNTRIES[country], "außerhalb der 50-km-Regionen")
+            region = (TRAVEL_COUNTRIES[country], "außerhalb der lokalen Suchregionen")
             scope = "reise"
         text = " ".join([event.title, event.description, event.venue, *event.tags, *event.artists])
         if any(contains(text, word) for word in profile.get("exclude", []) if word.strip()):
