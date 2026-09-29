@@ -11,10 +11,12 @@ from .interview import interview, validate_profile
 from .matching import match_events
 from .reports import write_digest
 from .sources.bandsintown import fetch_artist
+from .sources.clubs import CLUBS, fetch_club
 from .sources.goabase import fetch_region
 from .sources.http import HttpClient, SourceError
 from .sources.local import load_local, sample_events
 from .sources.structured import fetch_site
+from .spotify import import_spotify
 from .storage import read_artists, read_json, write_json
 
 
@@ -40,6 +42,11 @@ def template_sources():
 
 def run(args):
     load_env()
+    if args.import_spotify:
+        result = import_spotify(args.import_spotify, DATA / "user_artists.csv", args.replace_import)
+        print(f"Spotify-Import: {result['plays']} Musikwiedergaben aus {result['files']} Audio-Dateien; "
+              f"{result['artists']} Artists lokal gespeichert: {result['destination']}")
+        return 0
     if args.init_sources:
         if SOURCES.exists():
             raise ValueError("Lokale Quellenkonfiguration existiert bereits; sie wurde nicht überschrieben.")
@@ -68,8 +75,10 @@ def run(args):
     artists = read_artists(artist_path)
     profile = validate_profile(read_json(PROFILE, {}))
     events, warnings, statuses, pages = [], [], [], []
+    if artist_path.resolve() != (DATA / "sample_artists.csv").resolve():
+        statuses.append(f"Lokales Musikprofil: {len(artists)} Künstler für das Matching geladen.")
     if not PROFILE.exists():
-        warnings.append("Kein Party-Profil: Genreangaben der Künstler-CSV und Standardregionen werden verwendet.")
+        warnings.append("Kein Party-Profil: Downtempo-/Melodic-Fokus und Standardregionen werden verwendet.")
     demo = not args.live and not args.events
     if demo:
         events = sample_events(args.month)
@@ -81,6 +90,19 @@ def run(args):
     failed = False
     if args.live:
         client = HttpClient()
+        if not args.no_clubs:
+            for club in CLUBS:
+                if club["city"] not in (profile.get("regions") or list(REGIONS)):
+                    continue
+                try:
+                    found, notes = fetch_club(client, club, args.month)
+                    events.extend(found)
+                    warnings.extend(notes)
+                    failed |= bool(notes)
+                    statuses.append(f"Clubprogramm / {club['name']}: {len(found)} Termine.")
+                except (SourceError, ValueError, KeyError, TypeError) as exc:
+                    failed = True
+                    warnings.append(f"Clubprogramm / {club['name']}: {exc if isinstance(exc, SourceError) else 'Ungültiges Datenformat.'}")
         for region in profile.get("regions") or list(REGIONS):
             try:
                 found, notes = fetch_region(client, region, args.month, profile.get("radius_km", DEFAULT_RADIUS_KM))
@@ -140,13 +162,15 @@ def run(args):
                     warnings.append(f"{page.get('name', 'Recherchequelle')}: {exc if isinstance(exc, SourceError) else 'Ungültige Konfiguration.'}")
                     failed = True
         if not settings.get("sites"):
-            warnings.append("Keine zusätzlichen Club-/Regional-/RA-Seiten konfiguriert. Abdeckung durch Goabase ist genreabhängig.")
+            warnings.append("Keine weiteren Club-/Regional-/RA-Seiten konfiguriert. Zusätzliche Venues können lokal ergänzt werden.")
     output = Path(args.output).resolve()
     if not output.is_relative_to(EXPORTS.resolve()):
         raise ValueError("Berichte dürfen zum Schutz vor Git-Uploads nur unter exports/ liegen.")
     if args.discover:
         print(f"Recherche: {write_discovery(events, artists, pages, DATA, output, warnings)}")
-    matches = match_events(events, artists, profile, start, end, today=start if demo else None)
+    # Die fiktive Beispiel-CSV darf echte Live-Termine nicht über beliebige Genres hochstufen.
+    matching_artists = [] if args.live and artist_path.resolve() == (DATA / "sample_artists.csv").resolve() else artists
+    matches = match_events(events, matching_artists, profile, start, end, today=start if demo else None, focused=args.live)
     paths = write_digest(matches, args.month, output, warnings, statuses, demo, profile.get("radius_km", DEFAULT_RADIUS_KM))
     print(f"Event Curator {APP_VERSION}: {len(matches)} regionale Funde")
     for path in paths:
@@ -167,8 +191,11 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description="Lokales Event- & Party-Tracking; ohne Optionen: Offline-Beispiel.")
     parser.add_argument("--version", action="version", version=APP_VERSION)
     parser.add_argument("--interview", action="store_true", help="Lokales Präferenzinterview")
+    parser.add_argument("--import-spotify", metavar="ORDNER", help="Spotify-Audio-Historie lokal auswerten und private Künstlerliste anlegen")
+    parser.add_argument("--replace-import", action="store_true", help="Eine bestehende importierte Künstlerliste ersetzen")
     parser.add_argument("--init-sources", action="store_true", help="Lokale Quellenkonfiguration anlegen")
-    parser.add_argument("--live", action="store_true", help="Goabase und konfigurierte Seiten abfragen")
+    parser.add_argument("--live", action="store_true", help="Clubprogramme, Goabase und konfigurierte Seiten abfragen")
+    parser.add_argument("--no-clubs", action="store_true", help="Öffentliche Clubprogramme bei diesem Live-Lauf auslassen")
     parser.add_argument("--include-bandsintown", action="store_true", help="Einzelne Künstlernamen an Bandsintown übertragen (App-ID nötig)")
     parser.add_argument("--discover", action="store_true", help="Frühere Venues, ähnliche Artists und Gig-Hinweise recherchieren")
     parser.add_argument("--artists", help="Lokale Künstler-CSV")
@@ -185,6 +212,9 @@ def main(argv=None):
     except (KeyboardInterrupt, EOFError):
         print("\nAbgebrochen; bestehendes Profil bleibt erhalten.", file=sys.stderr)
         return 130
+    except FileExistsError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
     except (ValueError, OSError, KeyError, TypeError, AttributeError, SourceError):
         # Kein Traceback mit URLs, Profilinhalten oder API-Schlüsseln.
         print("Eingabe-/Dateifehler: CSV-Spalten, JSON-Konfiguration, Monat und Dateipfade prüfen (siehe README).", file=sys.stderr)

@@ -5,10 +5,14 @@
 ### 🚀 Added
 - Responsive HTML-Oberfläche mit Sprungmarken, Orts- und Typfiltern, Suche und interaktiver Offline-Karte.
 - Berlin und Frankfurt als Zielregionen sowie öffentlich belegter Downtempo-Artist-Radar.
+- Direkte Programmquellen für Kater, Beate Uwe und Tanzhaus West mit Line-up- und Datumsprüfung.
+- Lokaler Import einer Spotify-Audio-Historie in eine von Git ignorierte Künstlerliste.
 
 ### 🔄 Changed
 - Standardsuchradius von 75 auf 50 Kilometer reduziert.
 - Monatsberichte zeigen Venues als Kartenpunkte, sofern Koordinaten verfügbar sind.
+- Live-Berichte gewichten Downtempo und Melodic stärker und blenden Events ohne passenden Stil oder Artist aus.
+- Fiktive Artist-Genres aus der Beispiel-CSV beeinflussen Live-Berichte nicht mehr.
 
 ## Version 0.1.0 — 2026-09-28
 

@@ -1,5 +1,6 @@
 from datetime import date, datetime
 from pathlib import Path
+import json
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -12,10 +13,12 @@ from config import DEFAULT_RADIUS_KM, REGIONS
 from event_curator.models import Artist, Event, coordinate
 from event_curator.reports import write_digest
 from event_curator.sources.bandsintown import fetch_artist
+from event_curator.sources.clubs import CLUBS, beate_events, document, kater_events, tanzhaus_events
 from event_curator.sources.goabase import fetch_region
 from event_curator.sources.http import SourceError, safe_url
 from event_curator.sources.structured import fetch_site
 from event_curator.storage import read_artists, read_json
+from event_curator.spotify import import_spotify
 from scripts.check_privacy import public_path, SECRET
 
 
@@ -58,7 +61,7 @@ class CoreTests(unittest.TestCase):
                   event(title="Früher", start=datetime(2030, 4, 30)), event(title="Hardstyle")]
         found = match_events(events, [], {"genres": ["Organic Downtempo"], "exclude": ["Hardstyle"]}, date(2030, 5, 1), date(2030, 6, 1), today=date(2030, 5, 1))
         self.assertEqual(len(found), 1)
-        self.assertEqual(found[0].score, 10)
+        self.assertEqual(found[0].score, 45)
 
     def test_festival_overlap_and_artist_boundary(self):
         events = [event(title="Festival", start=datetime(2030, 4, 30), end=datetime(2030, 5, 3), artists=["Annabel"])]
@@ -119,6 +122,62 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(found[0].score, 14)
         favorite = match_events([featured], [Artist("Acid Pauli")], {}, date(2030, 5, 1), date(2030, 6, 1), today=date(2030, 5, 1))
         self.assertEqual(favorite[0].score, 50)
+
+    def test_focused_matching_prefers_melodic_and_excludes_unrelated_goa(self):
+        events = [event(title="Melodic Techno Nacht"), event(title="Goa Trance Nacht"),
+                  event(title="Beate Barfuß", tags=["Downtempo"])]
+        found = match_events(events, [], {}, date(2030, 5, 1), date(2030, 6, 1),
+                             today=date(2030, 5, 1), focused=True)
+        self.assertEqual({m.event.title for m in found}, {"Melodic Techno Nacht", "Beate Barfuß"})
+        self.assertGreater(found[0].score, 0)
+
+    def test_club_pages_parse_dates_and_own_evidence(self):
+        kater = '''<article id="event-7" class="event"><span class="date-title">Katernacht</span>
+          <div class="entry-summary"><p>Fr. 02.10 22:00 – Sa. 03.10 08:00</p><p>Acid Pauli<br>Open Air</p></div></article>'''
+        parsed = kater_events(document(kater), CLUBS[0], 2030, 10)
+        self.assertEqual(len(parsed), 1)
+        self.assertIn("Acid Pauli", parsed[0].description)
+        self.assertEqual(parsed[0].start.hour, 22)
+        self.assertEqual(parsed[0].venue, "Kater")
+        beate = '''<span class="elementor-icon-list-text">FR, 02.10.30 OKT</span>
+          <span class="elementor-icon-list-text">23:00</span><p>Beate Barfuß</p><p>w/ Just Emma</p>
+          <span class="elementor-icon-list-text">SA, 03.10.30 OKT</span>
+          <span class="elementor-icon-list-text">21:00</span><p>Andere Nacht</p>'''
+        parsed = beate_events(document(beate), CLUBS[1], 2030, 10)
+        self.assertEqual(len(parsed), 2)
+        self.assertEqual(parsed[0].tags, ["Downtempo"])
+        self.assertNotIn("Andere Nacht", parsed[0].description)
+        listing = '''<div class="cm_thw_events_list"><h1>Oktober</h1></div>
+          <div class="cm_thw_events_list event"><div class="content-left">Fr /02</div>
+          <div class="content-right"><a href="/veranstaltungen/nacht/"><h2>Nacht</h2><p>Melodic Techno</p></a></div></div>'''
+        class Client:
+            def page(self, url):
+                return '<div class="event_detail"><p>Ab 23 Uhr</p><p>mit Live Act</p></div>'
+        parsed, notes = tanzhaus_events(Client(), document(listing), CLUBS[2], 2030, 10)
+        self.assertEqual(notes, [])
+        self.assertEqual(len(parsed), 1)
+        self.assertEqual(parsed[0].start.hour, 23)
+        self.assertIn("Melodic Techno", parsed[0].description)
+
+    def test_spotify_import_keeps_only_music_and_writes_private_artist_summary(self):
+        with temporary_directory() as folder:
+            root = Path(folder)
+            audio = [
+                {"ts": "2023-05-01T12:00:00Z", "spotify_track_uri": "spotify:track:a", "master_metadata_album_artist_name": "Alt", "ms_played": 300000},
+                {"ts": "2025-05-01T12:00:00Z", "spotify_track_uri": "spotify:track:b", "master_metadata_album_artist_name": "Neu", "ms_played": 300000},
+                {"ts": "2025-05-02T12:00:00Z", "spotify_track_uri": "spotify:track:c", "master_metadata_album_artist_name": "Übersprungen", "ms_played": 5000},
+                {"ts": "2025-05-03T12:00:00Z", "spotify_episode_uri": "spotify:episode:a", "master_metadata_album_artist_name": None, "ms_played": 300000},
+            ]
+            (root / "Streaming_History_Audio_2025.json").write_text(json.dumps(audio), encoding="utf-8")
+            (root / "Streaming_History_Audio_2025_1.json").write_text(json.dumps([audio[1]]), encoding="utf-8")
+            (root / "Streaming_History_Video_2025.json").write_text(json.dumps(audio), encoding="utf-8")
+            destination = root / "artists.csv"
+            result = import_spotify(root, destination)
+            self.assertEqual((result["files"], result["plays"], result["artists"]), (2, 2, 2))
+            self.assertEqual([a.name for a in read_artists(destination)], ["Neu", "Alt"])
+            self.assertNotIn("spotify:track", destination.read_text(encoding="utf-8"))
+            with self.assertRaises(FileExistsError):
+                import_spotify(root, destination)
 
     def test_discovery_network_keeps_favorites_separate(self):
         old = event(start=datetime(2020, 1, 1), artists=["Favorite", "New Artist"], url="https://example.org/old")
@@ -185,7 +244,7 @@ class CoreTests(unittest.TestCase):
         with temporary_directory() as folder:
             root = Path(folder)
             with patch("event_curator.cli.EXPORTS", root), patch("event_curator.cli.PROFILE", root / "missing.json"), patch("event_curator.cli.SOURCES", root / "missing.json"), patch("event_curator.cli.STATE", root / "state.json"), patch("event_curator.cli.fetch_region", side_effect=SourceError("HTTP 503")):
-                result = main(["--live", "--monthly", "--month", "2030-05", "--output", str(root)])
+                result = main(["--live", "--no-clubs", "--monthly", "--month", "2030-05", "--output", str(root)])
             self.assertEqual(result, 2)
             self.assertFalse((root / "state.json").exists())
             self.assertIn("503", (root / "digest-2030-05.md").read_text(encoding="utf-8"))
@@ -194,7 +253,7 @@ class CoreTests(unittest.TestCase):
         with temporary_directory() as folder:
             root = Path(folder)
             with patch("event_curator.cli.EXPORTS", root), patch("event_curator.cli.PROFILE", root / "missing.json"), patch("event_curator.cli.SOURCES", root / "missing.json"), patch("event_curator.cli.STATE", root / "state.json"), patch("event_curator.cli.fetch_region", return_value=([], [])) as fetch:
-                argv = ["--live", "--monthly", "--month", "2030-05", "--output", str(root)]
+                argv = ["--live", "--no-clubs", "--monthly", "--month", "2030-05", "--output", str(root)]
                 self.assertEqual(main(argv), 0)
                 self.assertEqual(main(argv), 0)
                 self.assertEqual(fetch.call_count, 5)

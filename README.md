@@ -55,6 +55,29 @@ Zum Reproduzieren gibt es `scripts/build_map_asset.py`; dafür ist einmalig Inte
 
 ## Eigene Künstler und Party-Profil
 
+### Spotify-Hörverlauf lokal importieren
+
+Wenn du den „Extended Streaming History“-Export von Spotify besitzt, gib seinen **lokalen
+Ordner** an (mit Anführungszeichen bei Leerzeichen):
+
+```powershell
+& .\.venv\Scripts\python.exe main.py --import-spotify 'C:\Pfad\zu\Spotify Extended Streaming History'
+& .\.venv\Scripts\python.exe main.py --live --month 2026-10
+```
+
+Der Import liest nur `Streaming_History_Audio_*.json`. Videos, Podcasts, Hörbücher,
+als übersprungen markierte Stücke, Wiedergaben unter 30 Sekunden und doppelte Einträge
+fließen nicht ein. Neuere
+Wiedergaben zählen stärker; die 80 meistgehörten Artists landen in der ignorierten Datei
+`data/user_artists.csv` mit gerundeten Hörstunden, Anzahl und letztem Hörjahr. Tracktitel,
+IP-Adressen und der rohe Verlauf werden nicht kopiert. Spotify liefert in diesen Dateien
+keine verlässlichen Genre-Tags; die App leitet daraus keine behaupteten Genres ab.
+Die Künstlerliste wird nur lokal mit Event-Line-ups abgeglichen. Eine bestehende Liste bleibt
+erhalten; `--replace-import` ersetzt sie ausdrücklich bei einem erneuten Import.
+
+**Datenschutz:** Der aktuelle Projektordner liegt unter OneDrive. Prüfe dessen Synchronisation,
+wenn auch die abgeleitete CSV und die Reports ausschließlich auf diesem Gerät bleiben sollen.
+
 `data/sample_artists.csv` enthält ausschließlich erfundene Namen. Eine eigene Liste
 als `data/artists.csv` oder `data/user_artists.csv` speichern:
 
@@ -84,10 +107,13 @@ unerwünschte Begriffe ab. Es speichert erst nach Abschluss atomar in
 - Abgesagte/verschobene Events sowie Ausschlussbegriffe werden herausgefiltert.
 - Gleicher Titel, Startzeit, Stadt und Venue werden dedupliziert. Abweichende Quellentitel
   können weiterhin doppelt erscheinen.
-- Persönlicher Artist-Treffer: 50 Punkte; ein belegter Name aus dem öffentlichen
-  Downtempo-Radar: 14 Punkte; Genre-/Konzeptbegriffe: jeweils 10; heuristische Nähe zu einer
-  gewählten Vibe-Referenz: 3. Der Bericht nennt die Gründe. Regionale Events ohne belegten
-  Match stehen mit 0 Punkten darunter. Das ist keine Qualitätsbewertung.
+- Live-Berichte zeigen nur Termine mit belegtem Downtempo-/Melodic-Stil, einem passenden
+  eigenen Artist oder einer ausdrücklich gewählten Musikrichtung. Reine Goa-/Psytrance-Funde
+  ohne diesen Bezug erscheinen nicht. Der Offline-Demomodus zeigt weiterhin alle Beispiele.
+- Persönlicher Artist-Treffer: 50 Punkte; Stiltreffer: 18–38 Punkte; ein belegter Name aus
+  dem öffentlichen Downtempo-Radar: 14 Punkte; weitere Genre-/Konzeptbegriffe: jeweils 10;
+  heuristische Nähe zu einer Vibe-Referenz: 3. Der Bericht nennt die Gründe. Das ist keine
+  Qualitätsbewertung. Fiktive Genres aus `sample_artists.csv` beeinflussen Live-Berichte nicht.
 
 Referenzen wie Kater Blau, Die Bucht, Fusion, Mystic Creatures und Moyn dienen dem
 Interview als Orientierung. Ihre Zuordnung zu Begriffen ist eine editierbare Heuristik
@@ -98,6 +124,7 @@ in `event_curator/matching.py`, keine Aussage über ein aktuelles Line-up.
 | Quelle | Anbindung | Voraussetzung / Grenze |
 |---|---|---|
 | Goabase | Öffentliche JSON-API, Region, Datum und Detaildaten | Mit `--live`; Schwerpunkt Goa/Psytrance, keine vollständige Techno-/Downtempo-Abdeckung |
+| [Kater](https://www.katerclub.de/), [Beate Uwe](https://beate-uwe.de/), [Tanzhaus West](https://tanzhaus-west.de/programm/) | Offizielle Programme einschließlich Datum, Beschreibung bzw. Line-up | Mit `--live` automatisch; Änderungen am Seitenaufbau werden als fehlende/fehlerhafte Quelle angezeigt |
 | Bandsintown | Künstler-Events | Eigene freigegebene App-ID, eigene Künstlerliste und `--include-bandsintown` |
 | Clubs, Festivals, regionale Seiten, Resident Advisor | Konfigurierbare HTTPS-Seiten, JSON-LD und begrenztes Nachladen von Eventlinks | Strukturierte Daten und erlaubter Abruf nötig; kein garantierter RA-Zugriff |
 | SoundCloud / Künstler-Websites | Öffentliche HTML-/Metabeschreibungen und verfügbare SoundCloud-Hydration | `--discover`; Gig-Hinweise bleiben unbestätigt, kein Login-/Schutzumgehen |
@@ -109,6 +136,12 @@ Die Implementierung richtet sich nach der offiziellen
 [Bandsintown-Dokumentation](https://help.artists.bandsintown.com/en/articles/9186477-api-documentation).
 Goabase-Quellenlinks bleiben im Digest erhalten. Abfrage-/Seitenlimits und Quellenausfälle
 erscheinen im Bericht. Ein fehlender Treffer bedeutet nicht, dass es keine Veranstaltung gibt.
+Die drei Clubseiten werden nur bei gewählten Regionen Berlin bzw. Frankfurt abgefragt.
+Mit `--no-clubs` lassen sie sich für einen Lauf auslassen. Beate-Uwes Reihe „Beate Barfuß“
+wird anhand der [Beschreibung des Clubs](https://beate-uwe.de/) als Downtempo markiert;
+bei anderen Clubnächten wird der Stil aus dem jeweiligen Programmtext oder bekannten Artists abgeleitet.
+Der frühere Berliner Club [Mensch Meier ist geschlossen](https://www.clubcommission.de/tschuessi-mensch-meier/)
+und wird daher nicht als aktuelle Terminquelle geführt.
 
 ### Bandsintown aktivieren
 

@@ -18,6 +18,14 @@ VENUE_HINTS = {
     "Die Bucht": ["open air", "downtempo"], "Fusion": ["festival", "collective", "kollektiv"],
     "Mystic Creatures": ["psy techno", "psytech", "hypnotic"], "Moyn": ["slow rave", "downtempo", "festival"],
 }
+# Die stärkste belegte Stilübereinstimmung zählt einmal. Ein bloßer Clubname ist kein Genrebeleg.
+FOCUS_STYLES = (
+    ("organic downtempo", 38), ("downtempo", 35), ("downtechno", 35),
+    ("ketapop", 35), ("slow rave", 32), ("slow house", 30),
+    ("melodic techno", 32), ("melodic house", 28),
+    ("organic house", 28), ("hypnotic techno", 25),
+    ("melodic", 18), ("deep house", 18),
+)
 
 
 def contains(text, term):
@@ -55,7 +63,7 @@ class Match:
     distance: str
 
 
-def match_events(events, artists, profile, start, end, today=None):
+def match_events(events, artists, profile, start, end, today=None, focused=False):
     today = today or date.today()
     result, seen = [], set()
     for event in events:
@@ -75,24 +83,36 @@ def match_events(events, artists, profile, start, end, today=None):
             continue
         seen.add(key)
         score, reasons = 0, []
+        music_evidence = False
         for artist in artists:
             if any(normalized(artist.name) == normalized(a) for a in event.artists) or contains(event.title + " " + event.description, artist.name):
                 score += 50
                 reasons.append(f"Künstler: {artist.name}")
+                music_evidence = True
         for artist in FEATURED_ARTISTS:
             if any(normalized(artist.name) == normalized(a) for a in event.artists) or contains(event.title + " " + event.description, artist.name):
                 if not any(normalized(artist.name) == normalized(a.name) for a in artists):
                     score += 14
                     reasons.append(f"Downtempo-Radar: {artist.name}")
+                    music_evidence = True
+        style = next(((term, points) for term, points in FOCUS_STYLES if contains(text, term)), None)
+        if style:
+            score += style[1]
+            reasons.append(f"Sound: {style[0]}")
+            music_evidence = True
         genre_prefs = list(dict.fromkeys(profile.get("genres", []) + [g for a in artists for g in a.genres]))
         for pref in genre_prefs + profile.get("concepts", []):
             if any(contains(text, term) for term in ALIASES.get(normalized(pref), [pref])):
                 score += 10
                 reasons.append(f"Begriff: {pref}")
+                if pref in profile.get("genres", []):
+                    music_evidence = True
         for venue in profile.get("venue_references", []):
             if any(contains(text, term) for term in VENUE_HINTS.get(venue, [])):
                 score += 3
                 reasons.append(f"Vibe-Heuristik: {venue}")
+        if focused and not music_evidence:
+            continue
         if not reasons:
             reasons.append("Regionaler Fund ohne belegte Präferenzübereinstimmung")
         result.append(Match(event, score, reasons, *region))

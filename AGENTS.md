@@ -19,6 +19,8 @@ Lokale Python-CLI zur regionalen Eventsuche, zum Präferenzinterview und zur Ers
 - `main.py`: CLI-Einstieg; `config.py`: öffentliche Standardwerte und lokale Konfiguration.
 - `event_curator/`: Datenmodelle, Interview, Matching, Reports und Quellenadapter.
 - `event_curator/discovery.py`: belegbasierte Artist-/Venue-Vorschläge und unbestätigte Gig-Hinweise.
+- `event_curator/spotify.py`: lokaler Spotify-Audioimport in eine ignorierte Artist-CSV; keine Rohdaten im Repository.
+- `event_curator/sources/clubs.py`: direkte Adapter für öffentliche Programme von Kater, Beate Uwe und Tanzhaus West.
 - `event_curator/ui/`: HTML/CSS/JavaScript und lokale Kartenbasis für den interaktiven Report.
 - `event_curator/featured.py`: kleine öffentliche Downtempo-Entdeckungsliste, getrennt von persönlichen Favoriten.
 - `data/sample_artists.csv`: ausschließlich fiktive öffentliche Beispieldaten.
@@ -34,6 +36,7 @@ Neue Versionen erst für stabile Releases; README und CHANGELOG dabei synchron h
 Direkt auf `develop` arbeiten; `main` enthält stabile Releases. PRs und Releases nur nach Bestätigung.
 Neue Quellen in `event_curator/sources/` ergänzen, CLI-Optionen in `event_curator/cli.py`.
 Gemeinsame Filter bleiben im Matching-Modul. Keine persönlichen Fixtures oder Keys in Tests.
+Live-Berichte filtern nach belegtem Downtempo-/Melodic-Stil oder lokalen Artist-Treffern.
 Kartengrenzen stammen aus Natural Earth (Public Domain); die generierte SVG wird mit `scripts/build_map_asset.py` gebaut und im Repo mitgeführt.
 Vor Upload Datenschutzprüfung und Offline-Tests ausführen. Dokumentation auf Deutsch pflegen.
 Recherchehinweise aus Clubs, Festivals und SoundCloud nicht ohne Datum-/Ortsprüfung in Events umdeuten.

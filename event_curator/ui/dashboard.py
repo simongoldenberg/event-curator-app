@@ -110,6 +110,8 @@ def render_dashboard(matches, month, warnings, statuses, demo=False, radius_km=D
     warning_items = "".join(f"<li>{escape(item)}</li>" for item in dict.fromkeys(warnings)) or "<li>Keine zusätzlichen Hinweise.</li>"
     demo_message = "Beispielansicht mit erfundenen Events. Die Termine sind nicht buchbar." if demo else "Termine und Tickets vor dem Besuch bei der verlinkten Quelle prüfen."
     demo_badge = "Demo · fiktive Events" if demo else "Lokaler Monatsüberblick"
+    focus_text = ("Die Beispiel-Events zeigen die Bedienung und sind frei erfunden." if demo else
+                  "Die Live-Auswahl zeigt belegte Downtempo-, Melodic- oder Artist-Treffer aus Clubprogrammen und weiteren Quellen.")
     payload = safe_json({"events": event_data, "regions": regions})
     sections = [
         '<!doctype html><html lang="de"><head><meta charset="utf-8">',
@@ -133,7 +135,7 @@ def render_dashboard(matches, month, warnings, statuses, demo=False, radius_km=D
         '</div></nav><main id="inhalt" class="wrap">',
         '<section class="intro" id="ueberblick"><div class="intro-grid"><div>',
         f'<span class="section-kicker">{escape(demo_badge)}</span><h2>Alles auf einen Blick.</h2>',
-        '<p>Events werden nach Nähe, Künstlern und deinen Musikrichtungen sortiert. Die Punkte zeigen den Grund für einen Treffer; sie sind keine Bewertung der Veranstaltung.</p>',
+        f'<p>{escape(focus_text)} Die Punkte erklären die Übereinstimmung; sie bewerten keine Veranstaltung.</p>',
         '</div><aside class="notice"><strong>Gut zu wissen</strong>',
         f'{escape(demo_message)}<br>Uhrzeiten stehen so im jeweiligen Quelleneintrag.</aside></div>',
         '<div class="summary">',
