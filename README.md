@@ -75,6 +75,23 @@ keine verlässlichen Genre-Tags; die App leitet daraus keine behaupteten Genres 
 Die Künstlerliste wird nur lokal mit Event-Line-ups abgeglichen. Eine bestehende Liste bleibt
 erhalten; `--replace-import` ersetzt sie ausdrücklich bei einem erneuten Import.
 
+### Konzertrecherche mit 2000 Artists importieren
+
+Die lokale Markdown-Recherche kann zusätzlich als private Prüfliste importiert werden:
+
+```powershell
+& .\.venv\Scripts\python.exe main.py --import-research 'C:\Pfad\zu\Konzertrecherche_Alle_2000_Artists.md'
+```
+
+Der Import prüft alle 2000 Ränge. Artists mit **geplanten** oder in den letzten drei Jahren
+belegten Auftritten werden zusätzlich im Live-Digest mit Line-ups abgeglichen. Die übrigen
+unklaren Fälle bleiben für den lokalen Clubseiten-Abgleich erhalten; `nein/nein` wird nicht
+übernommen. Die Datei `data/user_concert_watchlist.csv` bleibt ignoriert. Der Import erzeugt
+keine neuen Eventkarten aus alten Recherchelinks. Bei einer aktualisierten Recherche kann
+`--replace-research` die private Prüfliste ersetzen.
+Kurze Einzelwort-Namen aus der neuen Liste zählen nur bei expliziter Line-up-Nennung;
+so wird ein gewöhnliches Wort im Beschreibungstext nicht zum Artist-Beleg.
+
 **Datenschutz:** Der aktuelle Projektordner liegt unter OneDrive. Prüfe dessen Synchronisation,
 wenn auch die abgeleitete CSV und die Reports ausschließlich auf diesem Gerät bleiben sollen.
 
@@ -202,11 +219,12 @@ eingerichtet. Die zusätzlichen Würzburg-/Umkreis-Programme liegen als allgemei
 Recherche-Seiten in der ignorierten `data/user_sources.json`. Die automatische Recherche
 wertet nur maschinenlesbare Termine direkt aus; andere Clubseiten liefern Hinweise, die
 manuell auf Datum, Ort und Line-up geprüft werden müssen. Sie durchsucht ohne eigene
-Bandsintown-ID nicht automatisch jeden der 200 Artists einzeln. Künstlernamen werden ohne
+Bandsintown-ID nicht automatisch jeden Artist einzeln. Künstlernamen werden ohne
 `--include-bandsintown` nicht an externe Dienste übertragen.
 
 Mit `-Discover` ruft die Aufgabe außerdem die acht konfigurierten Clubseiten ohne
-Artist-Suchparameter ab und vergleicht deren sichtbaren Text **lokal mit allen 200 Artists**
+Artist-Suchparameter ab und vergleicht deren sichtbaren Text **lokal mit den 200 Favoriten,
+den importierten Konzertkandidaten und offenen Prüffällen**
 und den öffentlichen Stilvorschlägen. Das Ergebnis steht in
 `exports/artist-scan-YYYY-MM.md`. Ein Namenshinweis kann auch ein alter Auftritt sein;
 erst nach Prüfung von Datum, Stadt und Line-up wird er als Termin übernommen.
@@ -225,7 +243,9 @@ BANDSINTOWN_APP_ID=
 
 Die CSV und das Profil werden nicht hochgeladen. Für diesen explizit aktivierten Adapter
 werden aber einzelne Künstlernamen und der API-Key an Bandsintown übertragen. Ohne diese
-Option bleiben die Künstlernamen beim lokalen Matching. Goabase erhält Suchmonat und
+Option bleiben die Künstlernamen beim lokalen Matching. Mit importierter Konzertliste umfasst
+die explizite Bandsintown-Abfrage auch deren belegte Auftrittskandidaten und kann mehrere
+hundert Einzelanfragen auslösen. Goabase erhält Suchmonat und
 Regionskoordinaten; konfigurierte Websites erhalten gewöhnliche Seitenabrufe.
 
 ### Club-, Festival-, Regional- und SoundCloud-Seiten konfigurieren
@@ -363,6 +383,8 @@ Optional die **lokale Windows-Aufgabenplanung** einrichten:
 ```
 
 Die Aufgabe prüft täglich um 09:00 Uhr und holt den ersten erfolgreichen Monatslauf nach.
+Mit `-Discover` läuft der lokale Seitenabgleich vor dem Digest. Sobald beide Schritte
+erfolgreich waren, überspringt die Aufgabe weitere Abrufe in diesem Monat.
 Sie läuft mit Benutzerrechten bei angemeldetem Benutzer, speichert kein Passwort und wurde
 nicht automatisch installiert. Es wird kein E-Mail-Versand eingerichtet. Gleichzeitige geplante
 Läufe werden unterbunden. Parallele manuelle Monatsläufe vermeiden.
@@ -423,6 +445,7 @@ event_curator/
   interview.py                Schrittweises Party-Interview
   matching.py                 Region, Datum, Relevanz, Ausschlüsse
   discovery.py                Auftrittshistorie, Artist-/Venue-Vorschläge, Gigtexte
+  research_import.py          Private 2000er-Recherche in gestufte Konzertliste importieren
   venue_catalog.py            Ignorierte lokale Liste belegter Venues laden
   reports.py                  Sichere Markdown-/HTML-Ausgabe
   sources/                    HTTP, Bandsintown, Goabase, JSON-LD, lokale Beispiele

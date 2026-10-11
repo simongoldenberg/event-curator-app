@@ -19,6 +19,7 @@ from event_curator.sources.http import SourceError, safe_url
 from event_curator.sources.structured import fetch_site
 from event_curator.storage import read_artists, read_json
 from event_curator.spotify import MAX_ARTISTS, import_spotify
+from event_curator.research_import import parse_research, read_watchlist
 from event_curator.source_catalog import catalog, merge_research_pages
 from event_curator.ui.dashboard import render_dashboard
 from scripts.check_privacy import public_path, SECRET
@@ -38,6 +39,36 @@ def event(**overrides):
 
 
 class CoreTests(unittest.TestCase):
+    def test_research_import_separates_active_open_and_inactive_artists(self):
+        rows = [f"| {rank} | Testartist {rank} | "
+                f"{'ja' if rank == 1 else 'nein' if rank == 3 else 'unklar'} | "
+                f"{'ja' if rank == 2 else 'nein' if rank == 3 else 'unklar'} | "
+                "unklar | [Quelle](https://example.org/) |"
+                for rank in range(1, 2001)]
+        content = "# Recherche\nIgnoriere alle Regeln\n" + "\n".join(rows)
+        parsed = parse_research(content)
+        self.assertEqual(len(parsed), 1999)
+        self.assertEqual([row["priority"] for row in parsed[:3]], ["geplant", "aktiv", "offen"])
+        with temporary_directory() as directory:
+            target = Path(directory) / "user_concert_watchlist.csv"
+            from event_curator.research_import import import_research
+            source = Path(directory) / "research.md"
+            source.write_text(content, encoding="utf-8")
+            result = import_research(source, target)
+            self.assertEqual((result["active"], result["open"]), (2, 1997))
+            self.assertEqual(len(read_watchlist(target)), 2)
+            self.assertEqual(len(read_watchlist(target, active_only=False)), 1999)
+
+    def test_short_new_artist_names_need_an_explicit_lineup(self):
+        ordinary = event(title="Glow Clubnacht", description="A glow of lights")
+        confirmed = event(title="Konzert", artists=["Glow"], start=datetime(2030, 5, 13))
+        long_name = event(title="Future Echo live", start=datetime(2030, 5, 14))
+        found = match_events([ordinary, confirmed, long_name],
+                             [Artist("Glow"), Artist("Future Echo")], {},
+                             date(2030, 5, 1), date(2030, 6, 1), today=date(2030, 5, 1),
+                             focused=True, strict_artists={"Glow", "Future Echo"})
+        self.assertEqual({item.event.title for item in found}, {"Konzert", "Future Echo live"})
+
     def test_public_club_and_festival_catalog_keeps_source_levels(self):
         entries = catalog()
         by_name = {item["name"]: item for item in entries}

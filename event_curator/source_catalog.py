@@ -16,12 +16,12 @@ SOURCES = (
     ("Renate", "Berlin", "Club & Live", "https://www.renate.cc/", "recherche", True),
     ("Sisyphos", "Berlin", "Club", "https://www.sisyphos-berlin.net/", "recherche", True),
     ("Club der Visionäre", "Berlin", "Club & Open Air", "https://clubdervisionaere.com/", "recherche", True),
-    ("Berghain / Panorama Bar", "Berlin", "Club", "https://www.berghain.berlin/en/", "recherche", True),
+    ("Berghain / Panorama Bar", "Berlin", "Club", "https://www.berghain.berlin/en/", "recherche", False),
     ("Tresor", "Berlin", "Club", "https://tresorberlin.com/", "recherche", False),
     ("Else", "Berlin", "Club & Open Air", "https://www.else.tv/", "recherche", False),
     ("Klunkerkranich", "Berlin", "Club & Live", "https://klunkerkranich.org/", "recherche", True),
     ("Zenner", "Berlin", "Club & Live", "https://zenner.berlin/programm/", "recherche", True),
-    ("Holzmarkt 25", "Berlin", "Kulturort", "https://www.holzmarkt.com/kalender/party", "recherche", True),
+    ("Holzmarkt 25", "Berlin", "Kulturort", "https://www.holzmarkt.com/kalender/party", "recherche", False),
     ("Fitzroy", "Berlin", "Club", "https://fitzroy-berlin.de/", "recherche", True),
     ("Birgit", "Berlin", "Club & Open Air", "https://www.birgit.club/", "recherche", False),
     ("Heideglühen", "Berlin", "Club", "https://heidegluehen.berlin/monatsvorschau/", "recherche", True),
@@ -39,7 +39,7 @@ SOURCES = (
     ("Tanzinsel", "Würzburg", "Festival", "https://tanzinsel.de/", "recherche", False),
     # Festivals sind überregional; die Ausgaben/Line-ups werden jährlich neu geprüft.
     ("Bucht der Träumer", "Helenesee", "Festival", "https://bucht-der-traeumer.de/", "recherche", True),
-    ("Fusion", "Lärz", "Festival", "https://fusion-festival.de/de/program", "recherche", True),
+    ("Fusion", "Lärz", "Festival", "https://fusion-festival.de/de/program", "recherche", False),
     ("Moyn", "Oyten", "Festival", "https://moynfestival.de/", "archiv", False),
 )
 

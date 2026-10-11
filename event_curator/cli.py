@@ -10,6 +10,7 @@ from .discovery import page_hints, write_discovery
 from .interview import interview, validate_profile
 from .matching import match_events
 from .reports import write_digest
+from .research_import import import_research, read_watchlist
 from .sources.bandsintown import fetch_artist
 from .sources.clubs import CLUBS, fetch_club
 from .sources.goabase import fetch_country, fetch_region, TRAVEL_COUNTRIES
@@ -18,6 +19,7 @@ from .sources.local import load_local, sample_events
 from .sources.structured import fetch_site
 from .spotify import import_spotify
 from .storage import read_artists, read_json, write_json
+from .models import normalized
 from .source_catalog import merge_research_pages, research_pages
 from .venue_catalog import read_venues
 
@@ -50,6 +52,11 @@ def template_sources():
 
 def run(args):
     load_env()
+    if args.import_research:
+        result = import_research(args.import_research, replace=args.replace_research)
+        print(f"Konzertliste lokal gespeichert: {result['active']} mit Auftrittsbeleg, "
+              f"{result['open']} offene Prüffälle: {result['destination']}")
+        return 0
     if args.import_spotify:
         result = import_spotify(args.import_spotify, DATA / "user_artists.csv", args.replace_import)
         print(f"Spotify-Import: {result['plays']} Musikwiedergaben aus {result['files']} Audio-Dateien; "
@@ -81,11 +88,19 @@ def run(args):
             return 0
     artist_path = Path(args.artists) if args.artists else next((p for p in (DATA / "artists.csv", DATA / "user_artists.csv") if p.exists()), DATA / "sample_artists.csv")
     artists = read_artists(artist_path)
+    watch_artists = read_watchlist() if not args.artists else []
+    known_names = {normalized(artist.name) for artist in artists}
+    strict_artists = {artist.name for artist in watch_artists if normalized(artist.name) not in known_names}
+    matching_artists = artists + [artist for artist in watch_artists if normalized(artist.name) not in known_names]
+    if args.live and artist_path.resolve() == (DATA / "sample_artists.csv").resolve():
+        matching_artists = watch_artists
     venues = read_venues()
     profile = validate_profile(read_json(PROFILE, {}))
     events, warnings, statuses, pages = [], [], [], []
     if artist_path.resolve() != (DATA / "sample_artists.csv").resolve():
         statuses.append(f"Lokales Musikprofil: {len(artists)} Künstler für das Matching geladen.")
+    if watch_artists:
+        statuses.append(f"Konzert-Prüfliste: {len(watch_artists)} belegte Artists lokal geladen; offene Fälle bleiben im Seitenabgleich.")
     if not PROFILE.exists():
         warnings.append("Kein Party-Profil: Downtempo-/Melodic-Fokus und Standardregionen werden verwendet.")
     demo = not args.live and not args.events
@@ -139,12 +154,12 @@ def run(args):
                 warnings.append(f"Goabase / Reiseland {country}: {exc if isinstance(exc, SourceError) else 'Ungültiges Datenformat.'}")
         if args.include_bandsintown:
             app_id = os.environ.get("BANDSINTOWN_APP_ID", "")
-            if not app_id or artist_path.resolve() == (DATA / "sample_artists.csv").resolve():
+            if not app_id or (artist_path.resolve() == (DATA / "sample_artists.csv").resolve() and not watch_artists):
                 warnings.append("Bandsintown benötigt eine eigene App-ID und eine eigene Künstler-CSV.")
                 failed = True
             else:
                 print("Bandsintown: einzelne Künstlernamen werden für die API-Abfragen übertragen.")
-                for artist in artists:
+                for artist in matching_artists:
                     try:
                         query_start = start - timedelta(days=730) if args.discover else start
                         found = fetch_artist(client, artist, app_id, query_start, end - timedelta(days=1))
@@ -169,7 +184,7 @@ def run(args):
         if args.discover:
             # Nur bekannte, lokal konfigurierte Club-Domains nachladen: keine erratenen Websites.
             from .discovery import venue_network
-            discovered_venues, _ = venue_network(events, artists)
+            discovered_venues, _ = venue_network(events, matching_artists, strict_artists)
             known = {v["venue"].casefold() for v in discovered_venues}
             for site in settings.get("venue_sites", []):
                 if site.get("enabled", True) and site.get("venue", "").casefold() in known:
@@ -191,11 +206,11 @@ def run(args):
     if not output.is_relative_to(EXPORTS.resolve()):
         raise ValueError("Berichte dürfen zum Schutz vor Git-Uploads nur unter exports/ liegen.")
     if args.discover:
-        print(f"Recherche: {write_discovery(events, artists, pages, DATA, output, warnings)}")
+        print(f"Recherche: {write_discovery(events, matching_artists, pages, DATA, output, warnings)}")
     # Die fiktive Beispiel-CSV darf echte Live-Termine nicht über beliebige Genres hochstufen.
-    matching_artists = [] if args.live and artist_path.resolve() == (DATA / "sample_artists.csv").resolve() else artists
     matches = match_events(events, matching_artists, profile, start, end, today=start if demo else None,
-                           focused=args.live or bool(args.events), travel=args.live or bool(args.events))
+                           focused=args.live or bool(args.events), travel=args.live or bool(args.events),
+                           strict_artists=strict_artists)
     paths = write_digest(matches, args.month, output, warnings, statuses, demo,
                          profile.get("radius_km", DEFAULT_RADIUS_KM), venues)
     print(f"Event Curator {APP_VERSION}: {len(matches)} Funde, {len(venues)} recherchierte Venues")
@@ -218,6 +233,8 @@ def main(argv=None):
     parser.add_argument("--version", action="version", version=APP_VERSION)
     parser.add_argument("--interview", action="store_true", help="Lokales Präferenzinterview")
     parser.add_argument("--import-spotify", metavar="ORDNER", help="Spotify-Audio-Historie lokal auswerten und private Künstlerliste anlegen")
+    parser.add_argument("--import-research", metavar="MARKDOWN", help="2000er-Konzertrecherche als lokale Prüfliste importieren")
+    parser.add_argument("--replace-research", action="store_true", help="Vorhandene lokale Konzert-Prüfliste beim Import ersetzen")
     parser.add_argument("--replace-import", action="store_true", help="Eine bestehende importierte Künstlerliste ersetzen")
     parser.add_argument("--init-sources", action="store_true", help="Lokale Quellenkonfiguration anlegen")
     parser.add_argument("--live", action="store_true", help="Clubprogramme, Goabase und konfigurierte Seiten abfragen")

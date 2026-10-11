@@ -13,6 +13,7 @@ from event_curator.featured import FEATURED_ARTISTS  # noqa: E402
 from event_curator.models import normalized  # noqa: E402
 from event_curator.sources.http import HttpClient, SourceError, safe_url  # noqa: E402
 from event_curator.storage import read_artists, read_json, write_private  # noqa: E402
+from event_curator.research_import import read_watchlist  # noqa: E402
 from event_curator.source_catalog import merge_research_pages  # noqa: E402
 
 
@@ -63,10 +64,14 @@ def main():
     args = parser.parse_args()
     datetime.strptime(args.month, "%Y-%m")
     artist_file = next((p for p in (DATA / "artists.csv", DATA / "user_artists.csv") if p.exists()), None)
-    if artist_file is None:
+    artists = read_artists(artist_file) if artist_file else []
+    favorite_names = {normalized(artist.name) for artist in artists}
+    watch_artists = read_watchlist(active_only=False)
+    active_names = {normalized(artist.name) for artist in read_watchlist()}
+    if not artists and not watch_artists:
         print("Keine private Artist-Liste; Seitenabgleich übersprungen.")
         return 0
-    artists = read_artists(artist_file)
+    artists.extend(artist for artist in watch_artists if normalized(artist.name) not in favorite_names)
     settings = read_json(SOURCES, {})
     if not isinstance(settings, dict) or not isinstance(settings.get("research_pages", []), list):
         raise ValueError("Ungültige Quellenkonfiguration.")
@@ -82,10 +87,17 @@ def main():
         if error:
             lines.append(f"Hinweis: {error}")
         elif hits:
-            personal = [hit for hit in hits if normalized(hit) in private_names]
+            active = [hit for hit in hits if normalized(hit) in active_names]
+            favorites = [hit for hit in hits if normalized(hit) in favorite_names and normalized(hit) not in active_names]
+            open_cases = [hit for hit in hits if normalized(hit) in private_names
+                          and normalized(hit) not in active_names | favorite_names]
             suggested = [hit for hit in hits if normalized(hit) not in private_names]
-            if personal:
-                lines.append("Aus deiner Liste: " + ", ".join(personal))
+            if active:
+                lines.append("Konzertkandidaten mit früherem/bevorstehendem Auftritt: " + ", ".join(active))
+            if favorites:
+                lines.append("Weitere Favoriten: " + ", ".join(favorites))
+            if open_cases:
+                lines.append("Offene Prüffälle: " + ", ".join(open_cases))
             if suggested:
                 lines.append("Öffentliche Stilvorschläge: " + ", ".join(suggested))
         else:

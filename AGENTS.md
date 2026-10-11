@@ -23,6 +23,7 @@ Lokale Python-CLI zur regionalen Eventsuche, zum Präferenzinterview und zur Ers
 - `event_curator/source_catalog.py`: öffentlicher Katalog offizieller Club- und Festivalprogramme; unterscheidet direkte Eventadapter, lokale Seitenrecherche, Links und Archive.
 - `event_curator/discovery.py`: belegbasierte Artist-/Venue-Vorschläge und unbestätigte Gig-Hinweise.
 - `event_curator/spotify.py`: lokaler Spotify-Audioimport in eine ignorierte Artist-CSV; keine Rohdaten im Repository.
+- `event_curator/research_import.py`: importiert eine private 2000er-Markdown-Recherche in eine ignorierte Konzert-Prüfliste; belegte und offene Fälle bleiben getrennt.
 - `event_curator/sources/clubs.py`: direkte Adapter für öffentliche Programme von Kater, Beate Uwe, Ritter Butzke, Tanzhaus West und Gretchen (einschließlich Live-Auftritten).
 - `event_curator/ui/`: HTML/CSS/JavaScript und lokale Kartenbasis für den interaktiven Report.
 - `event_curator/featured.py`: kleine öffentliche Downtempo-Entdeckungsliste, getrennt von persönlichen Favoriten.

@@ -2,6 +2,11 @@
 
 ## Unveröffentlicht
 
+- Private 2000er-Konzertrecherche importierbar: belegte Auftrittskandidaten fließen in
+  das lokale Live-Matching ein, offene Fälle in den Clubseiten-Abgleich. Einzelne
+  Artist-Abfragen bleiben an die explizite Bandsintown-Option gebunden.
+- Die Windows-Monatsaufgabe scannt allgemeine Clubseiten vor dem Digest und stoppt nach
+  einem vollständigen Monatslauf bis zum nächsten Monat.
 - Öffentlichen Club- und Festival-Katalog im HTML-Bericht ergänzt: 19 Berliner Orte,
   weitere regionale Programme sowie Bucht, Fusion und Moyn mit klar gekennzeichneter
   Suchabdeckung. Zusätzliche allgemeine Programmseiten fließen in den monatlichen

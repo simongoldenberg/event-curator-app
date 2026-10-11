@@ -65,8 +65,10 @@ class Match:
     scope: str = "regional"
 
 
-def match_events(events, artists, profile, start, end, today=None, focused=False, travel=False):
+def match_events(events, artists, profile, start, end, today=None, focused=False, travel=False,
+                 strict_artists=()):
     today = today or date.today()
+    strict_names = {normalized(name) for name in strict_artists}
     result, seen = [], set()
     for event in events:
         event_end = event.end.date() if event.end else event.start.date()
@@ -92,7 +94,13 @@ def match_events(events, artists, profile, start, end, today=None, focused=False
         score, reasons = 0, []
         music_evidence = False
         for artist in artists:
-            if any(normalized(artist.name) == normalized(a) for a in event.artists) or contains(event.title + " " + event.description, artist.name):
+            name = normalized(artist.name)
+            exact_lineup = any(name == normalized(a) for a in event.artists)
+            if name in strict_names and len(name.split()) == 1:
+                text_match = len(name) >= 7 and contains(event.title, artist.name)
+            else:
+                text_match = contains(event.title + " " + event.description, artist.name)
+            if exact_lineup or text_match:
                 score += 50
                 reasons.append(f"Künstler: {artist.name}")
                 music_evidence = True

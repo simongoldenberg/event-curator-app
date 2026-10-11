@@ -97,13 +97,23 @@ def page_hints(client, settings):
             "links": links[:60], "artist_candidates": list(dict.fromkeys(candidates))[:100]}
 
 
-def venue_network(events, artists):
+def venue_network(events, artists, strict_artists=()):
     favorites = {normalized(artist.name) for artist in artists}
+    strict_names = {normalized(name) for name in strict_artists}
     past_venues, recommendations = {}, {}
     for event in events:
         if event.start.date() >= date.today():
             continue
-        matched = [artist.name for artist in artists if any(normalized(artist.name) == normalized(a) for a in event.artists) or contains(event.description + " " + event.title, artist.name)]
+        matched = []
+        for artist in artists:
+            name = normalized(artist.name)
+            exact_lineup = any(name == normalized(a) for a in event.artists)
+            if name in strict_names and len(name.split()) == 1:
+                text_match = len(name) >= 7 and contains(event.title, artist.name)
+            else:
+                text_match = contains(event.description + " " + event.title, artist.name)
+            if exact_lineup or text_match:
+                matched.append(artist.name)
         if matched and event.venue:
             key = (normalized(event.venue), normalized(event.city))
             past_venues[key] = {"venue": event.venue, "city": event.city, "favorite_artists": matched,
