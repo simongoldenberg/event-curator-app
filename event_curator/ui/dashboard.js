@@ -154,11 +154,12 @@
     }
     const count = visibleCards().length;
     resultCount.textContent = `${count} ${count === 1 ? "Event" : "Events"} sichtbar`;
+    document.getElementById("visible-count").textContent = `${count} ${count === 1 ? "Termin" : "Termine"}`;
     noResults.hidden = count !== 0;
     for (const section of document.querySelectorAll("[data-event-section]")) {
       const inSection = [...section.querySelectorAll(".event-card")].filter(card => !card.hidden).length;
-      section.querySelector("[data-section-count]").textContent = String(inSection);
-      section.querySelector(".section-empty").hidden = inSection !== 0;
+      section.querySelector("[data-section-count]").textContent = `${inSection} ${inSection === 1 ? "Termin" : "Termine"}`;
+      section.hidden = inSection === 0;
     }
     renderVenues();
   }
@@ -223,5 +224,9 @@
   frame.addEventListener("pointerup", finishDrag);
   frame.addEventListener("pointercancel", finishDrag);
   window.addEventListener("resize", paintTransform);
+  if (location.hash) {
+    const target = document.getElementById(decodeURIComponent(location.hash.slice(1)));
+    if (target?.matches("details")) target.open = true;
+  }
   filterEvents();
 })();

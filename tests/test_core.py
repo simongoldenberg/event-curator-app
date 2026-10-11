@@ -184,13 +184,16 @@ class CoreTests(unittest.TestCase):
             html = paths[1].read_text(encoding="utf-8")
             self.assertNotIn("<script>alert(1)</script>", html)
             self.assertNotIn("javascript:", html)
-            self.assertIn("Rubrik 1", html)
-            self.assertIn("Rubrik 2", html)
+            self.assertIn("Konzerte & Live-Acts", html)
+            self.assertIn("Parties, Raves & Open Airs", html)
             self.assertIn("&lt;script&gt;", html)
             self.assertIn('id="karte"', html)
             self.assertIn('id="map-pins"', html)
             self.assertIn('data-region-filter="Berlin"', html)
-            self.assertIn("Downtempo-Radar", html)
+            self.assertIn("Downtempo-Artists entdecken", html)
+            self.assertIn('rel="manifest"', html)
+            self.assertEqual((Path(folder) / "app.html").read_text(encoding="utf-8"), html)
+            self.assertTrue((Path(folder) / "event-curator-192.png").read_bytes().startswith(b"\x89PNG"))
 
     def test_featured_artist_is_distinct_from_favorite(self):
         featured = event(title="Acid Pauli Live")
@@ -337,7 +340,7 @@ class CoreTests(unittest.TestCase):
     def test_partial_month_does_not_mark_complete(self):
         with temporary_directory() as folder:
             root = Path(folder)
-            with patch("event_curator.cli.EXPORTS", root), patch("event_curator.cli.PROFILE", root / "missing.json"), patch("event_curator.cli.SOURCES", root / "missing.json"), patch("event_curator.cli.STATE", root / "state.json"), patch("event_curator.cli.fetch_region", side_effect=SourceError("HTTP 503")):
+            with patch("event_curator.cli.EXPORTS", root), patch("event_curator.cli.PROFILE", root / "missing.json"), patch("event_curator.cli.SOURCES", root / "missing.json"), patch("event_curator.cli.STATE", root / "state.json"), patch("event_curator.cli.fetch_region", side_effect=SourceError("HTTP 503")), patch("event_curator.cli.fetch_country", return_value=([], [])):
                 result = main(["--live", "--no-clubs", "--monthly", "--month", "2030-05", "--output", str(root)])
             self.assertEqual(result, 2)
             self.assertFalse((root / "state.json").exists())
@@ -346,7 +349,7 @@ class CoreTests(unittest.TestCase):
     def test_month_success_and_repeat(self):
         with temporary_directory() as folder:
             root = Path(folder)
-            with patch("event_curator.cli.EXPORTS", root), patch("event_curator.cli.PROFILE", root / "missing.json"), patch("event_curator.cli.SOURCES", root / "missing.json"), patch("event_curator.cli.STATE", root / "state.json"), patch("event_curator.cli.fetch_region", return_value=([], [])) as fetch:
+            with patch("event_curator.cli.EXPORTS", root), patch("event_curator.cli.PROFILE", root / "missing.json"), patch("event_curator.cli.SOURCES", root / "missing.json"), patch("event_curator.cli.STATE", root / "state.json"), patch("event_curator.cli.fetch_region", return_value=([], [])) as fetch, patch("event_curator.cli.fetch_country", return_value=([], [])):
                 argv = ["--live", "--no-clubs", "--monthly", "--month", "2030-05", "--output", str(root)]
                 self.assertEqual(main(argv), 0)
                 self.assertEqual(main(argv), 0)

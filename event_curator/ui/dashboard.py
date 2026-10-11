@@ -60,12 +60,11 @@ def card(match, index):
     html = (
         f'<article class="event-card" id="{card_id}" data-category="{event.category}" '
         f'data-region="{escape(match.region, quote=True)}" data-scope="{match.scope}" data-search="{escape(search, quote=True)}">'
-        f'<div class="event-top"><span class="event-date">{WEEKDAYS[event.start.weekday()]}, {event.start:%d.%m. · %H:%M} Uhr</span>'
-        f'<span class="event-score">{match.score} Punkte</span></div>'
+        f'<div class="event-top"><span class="event-date">{WEEKDAYS[event.start.weekday()]}, {event.start:%d.%m. · %H:%M} Uhr</span></div>'
         f'<h3>{escape(event.title)}</h3>'
         f'<p class="event-meta">{escape(location or "Ort laut Quelle")}</p>'
         f'<p class="event-meta">{escape(match.region)} · {escape(match.distance)}</p>'
-        f'<p class="reason">{escape(reasons)}</p>'
+        f'<p class="reason">Passt wegen: {escape(reasons)}</p>'
         f'<div class="event-actions">{"".join(actions)}</div></article>'
     )
     data = {"id": card_id, "title": event.title, "city": event.city, "venue": event.venue,
@@ -79,9 +78,8 @@ def event_section(matches, category, heading, subtitle, number, scope="regional"
     selected = [m for m in matches if m.scope == scope and (category == "all" or m.event.category == category)]
     markup = [f'<section class="section event-section" id="{section_id}" data-event-section>',
               '<div class="section-header"><div>',
-              f'<span class="section-kicker">Rubrik {number}</span><h2>{heading}</h2></div>',
-              f'<p>{subtitle}</p></div>',
-              f'<span class="pill"><span data-section-count>{len(selected)}</span>&nbsp;Einträge</span>',
+              f'<h2>{heading}</h2></div>',
+              f'<span class="pill" data-section-count>{len(selected)} {"Termin" if len(selected) == 1 else "Termine"}</span></div>',
               '<div class="event-grid">']
     events = []
     for index, match in enumerate(matches):
@@ -102,7 +100,6 @@ def render_dashboard(matches, month, warnings, statuses, demo=False, radius_km=D
     parties, party_events = event_section(matches, "party", "Parties, Raves & Open Airs", "Clubnächte, Kollektive und offene Tanzflächen für die nächsten Wochen.", 2)
     travel, travel_events = event_section(matches, "all", "Unterwegs in vier Ländern", "Deutschland, Frankreich, Schweiz und Österreich – passende Termine außerhalb deiner lokalen Suchregionen.", 3, "reise")
     event_data = live_events + party_events + travel_events
-    venue_count = len(venues)
     chips = ['<button class="chip" type="button" data-region-filter="all" aria-pressed="true">Alle Orte</button>']
     chips.extend(f'<button class="chip" type="button" data-region-filter="{escape(name, quote=True)}" aria-pressed="false">{escape(name)}</button>' for name in REGIONS)
     chips.extend(f'<button class="chip" type="button" data-region-filter="{name}" aria-pressed="false">{name}</button>'
@@ -149,44 +146,27 @@ def render_dashboard(matches, month, warnings, statuses, demo=False, radius_km=D
     status_items = "".join(f"<li>{escape(item)}</li>" for item in statuses) or "<li>Keine Quelle abgefragt.</li>"
     warning_items = "".join(f"<li>{escape(item)}</li>" for item in dict.fromkeys(warnings)) or "<li>Keine zusätzlichen Hinweise.</li>"
     demo_message = "Beispielansicht mit erfundenen Events. Die Termine sind nicht buchbar." if demo else "Termine und Tickets vor dem Besuch bei der verlinkten Quelle prüfen."
-    demo_badge = "Demo · fiktive Events" if demo else "Lokaler Monatsüberblick"
-    focus_text = ("Die Beispiel-Events zeigen die Bedienung und sind frei erfunden." if demo else
-                  "Die Live-Auswahl zeigt belegte Downtempo-, Melodic- oder Artist-Treffer aus Clubprogrammen und weiteren Quellen.")
+    demo_badge = "Demo mit fiktiven Terminen" if demo else "Lokaler Monatsbericht"
     payload = safe_json({"events": event_data, "regions": regions})
     sections = [
         '<!doctype html><html lang="de"><head><meta charset="utf-8">',
         '<meta name="viewport" content="width=device-width,initial-scale=1">',
-        '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; img-src data:; style-src \'unsafe-inline\'; script-src \'unsafe-inline\'; base-uri \'none\'; form-action \'none\'">',
+        '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; img-src \'self\' data:; manifest-src \'self\'; style-src \'unsafe-inline\'; script-src \'unsafe-inline\'; base-uri \'none\'; form-action \'none\'">',
         '<meta name="color-scheme" content="light">',
+        '<meta name="theme-color" content="#153b35"><meta name="apple-mobile-web-app-capable" content="yes">',
+        '<link rel="manifest" href="./manifest.webmanifest"><link rel="apple-touch-icon" href="./event-curator-192.png">',
         f'<title>Event Curator · {escape(month)}</title><style>{css}</style></head><body>',
         '<a class="sr-only" href="#inhalt">Zum Inhalt springen</a>',
-        '<header class="masthead"><div class="wrap"><div class="topline"><a class="brand" href="#start">◌ EVENT CURATOR</a>',
-        f'<span class="edition">Ausgabe {escape(month)} · Version {APP_VERSION}</span></div>',
-        '<div class="hero" id="start"><span class="eyebrow">Dein Kompass für lange Nächte</span>',
-        '<h1>Finde deinen<br><em>nächsten Sound.</em></h1>',
-        f'<p>Downtempo, Organic und Melodic im Fokus. Würzburg mit {max(100, radius_km):g} km Umkreis, vier weitere Städte mit {radius_km:g} km – '
-        'und ein eigener Blick auf Deutschland, Frankreich, die Schweiz und Österreich.</p>',
-        '<div class="hero-actions"><a class="button button-primary" href="#karte">↗ Karte entdecken</a>',
-        '<a class="button button-ghost" href="#live">Konzerte ansehen</a>',
-        '<a class="button button-ghost" href="#reisen">Reisen ansehen</a></div></div></div></header>',
+        '<header class="masthead" id="start"><div class="wrap"><div class="topline"><a class="brand" href="#start">EVENT CURATOR</a>',
+        f'<span class="edition">{escape(month)} · Version {APP_VERSION}</span></div>',
+        '<div class="hero"><div><h1>Deine nächsten Events.</h1>',
+        f'<p>{escape(demo_badge)} · Downtempo & Melodic · {len(matches)} Termine</p></div>',
+        '<a class="button button-primary" href="#karte">Karte ansehen</a></div></div></header>',
         '<nav class="quicknav" aria-label="Seitenbereiche"><div class="wrap">',
-        '<a href="#ueberblick">Überblick</a><a href="#karte">Karte</a><a href="#live">Konzerte</a>',
-        '<a href="#parties">Parties</a><a href="#reisen">Vier Länder</a><a href="#katalog">Clubs & Festivals</a><a href="#venues">Artist-Venues</a>',
-        '<a href="#artists">Downtempo-Radar</a><a href="#quellen">Quellen</a>',
+        '<a href="#events">Events</a><a href="#karte">Karte</a><a href="#mehr">Mehr</a>',
         '</div></nav><main id="inhalt" class="wrap">',
-        '<section class="intro" id="ueberblick"><div class="intro-grid"><div>',
-        f'<span class="section-kicker">{escape(demo_badge)}</span><h2>Alles auf einen Blick.</h2>',
-        f'<p>{escape(focus_text)} Die Punkte erklären die Übereinstimmung; sie bewerten keine Veranstaltung.</p>',
-        '</div><aside class="notice"><strong>Gut zu wissen</strong>',
-        f'{escape(demo_message)}<br>Uhrzeiten stehen so im jeweiligen Quelleneintrag.</aside></div>',
-        '<div class="summary">',
-        f'<div class="stat"><strong>{len(matches)}</strong><span>Events im Monat</span></div>',
-        f'<div class="stat"><strong>{venue_count}</strong><span>Venues mit Artist-Beleg</span></div>',
-        f'<div class="stat"><strong>{len(REGIONS)} + 4</strong><span>Städte + Reiseländer</span></div>',
-        '</div></section>',
-        '<section class="section" id="karte"><div class="section-header"><div>',
-        '<span class="section-kicker">01 / Entdecken</span><h2>Wo passiert etwas?</h2></div>',
-        '<p>Wähle eine Stadt oder ein Reiseland. Pins zeigen nur Events mit Koordinaten; alle belegten Clubs stehen weiter unten.</p></div>',
+        '<section class="section event-finder" id="events"><div class="section-header"><div><h2>Finde einen Termin</h2>',
+        f'<p>{escape(demo_message)}</p></div><span class="pill" id="visible-count">{len(matches)} Termine</span></div>',
         '<div class="filters"><div>',
         '<div class="filter-group" aria-label="Region wählen">', "".join(chips), '</div>',
         '<div class="filter-group" style="margin-top:9px" aria-label="Eventart wählen">',
@@ -196,6 +176,10 @@ def render_dashboard(matches, month, warnings, statuses, demo=False, radius_km=D
         '<div><label class="sr-only" for="event-search">Events suchen</label>',
         '<input class="search" id="event-search" type="search" placeholder="Artist, Ort oder Event suchen" autocomplete="off">',
         '<span class="sr-only" id="result-count" aria-live="polite"></span></div></div>',
+        '<p class="empty" id="no-results" hidden>Keine Events für diese Auswahl. Probiere einen anderen Ort, Typ oder Suchbegriff.</p>',
+        live, parties, travel,
+        '</section><section class="section" id="karte"><div class="section-header"><div><h2>Orte auf der Karte</h2>',
+        '<p>Die Pins zeigen Events mit Koordinaten. Filter und Suche gelten auch hier.</p></div></div>',
         '<div class="map-layout"><div><div class="map-frame" id="map-frame" aria-label="Interaktive Karte der Veranstaltungsorte">',
         f'<div class="map-world" id="map-world">{svg}{rings}<div id="map-pins"></div></div>',
         '<div class="map-controls"><button type="button" id="zoom-in" aria-label="Karte vergrößern">+</button>',
@@ -203,30 +187,23 @@ def render_dashboard(matches, month, warnings, statuses, demo=False, radius_km=D
         '<button type="button" id="zoom-reset" aria-label="Kartenausschnitt zurücksetzen">Alle</button></div>',
         '<div class="map-popup" id="map-popup" hidden><button class="popup-close" id="popup-close" type="button" aria-label="Infokarte schließen">×</button>',
         '<strong></strong><p></p><button type="button" data-open-event>Event ansehen ↗</button></div></div>',
-        '<p class="map-note">Kartenbasis: Natural Earth, gemeinfrei. Pins mit ungenauem oder unbekanntem Venue-Namen zeigen die Event-Koordinate; maßgeblich ist der Quellenlink.</p></div>',
+        '<p class="map-note">Kartenbasis: Natural Earth. Bei ungenauen Ortsangaben gilt der Quellenlink.</p></div>',
         '<aside class="venue-panel"><div class="venue-panel-head"><strong>Orte in deiner Auswahl</strong>',
         '<p><span id="venue-count">0</span> Pins · Zum Zentrieren antippen</p></div>',
         '<div class="venue-list" id="venue-list"></div></aside></div>',
-        '<p class="empty" id="no-results" hidden>Keine Events für diese Auswahl. Probiere einen anderen Ort, Typ oder Suchbegriff.</p></section>',
-        live, parties, travel,
-        '<section class="section" id="katalog"><div class="section-header"><div>',
-        '<h2>Clubs & Festivals im Blick.</h2></div>',
-        '<p>Offizielle Programme für die weitere Suche. Nur „Termine automatisch“ liefert direkt datierte Eventkarten. „Seitenabgleich“ prüft Artist-Namen lokal und liefert erst einmal Hinweise.</p></div>',
-        '<p class="catalog-note">Fusion und Bucht liegen außerhalb des Berliner 50-km-Rings. Moyn bleibt nach der Abschiedsausgabe 2026 als Referenz sichtbar.</p>',
-        f'<div class="catalog-groups">{catalog_markup}</div></section>',
-        '<section class="section" id="venues"><div class="section-header"><div>',
-        '<span class="section-kicker">Venue-Scout</span><h2>Orte, die deinen Sound kennen.</h2></div>',
-        '<p>Frühere oder angekündigte Gigs aus deiner lokalen Artist-Auswahl. Folge dem Programm-Link für neue Termine; ein Auftrittsbeleg ist noch kein künftiges Event.</p></div>',
-        f'<div class="research-grid">{venue_markup}</div></section>',
-        '<section class="section" id="artists"><div class="section-header"><div>',
-        '<span class="section-kicker">Artist-Radar</span><h2>Langsamer. Tiefer. Wärmer.</h2></div>',
-        '<p>Öffentliche Künstlerprofile für Downtempo und Organic Sounds. Sie sind keine bestätigten Auftritte und keine persönlichen Favoriten.</p></div>',
-        f'<div class="artist-grid">{"".join(artist_cards)}</div></section>',
-        '<section class="section" id="quellen"><div class="section-header"><div>',
-        '<span class="section-kicker">Transparenz</span><h2>Woher kommen die Funde?</h2></div>',
-        '<p>Fehler und Lücken bleiben sichtbar, damit du einen leeren Bericht richtig einordnen kannst.</p></div>',
+        '</section><section class="section extras" id="mehr"><h2>Mehr entdecken</h2>',
+        '<details id="katalog"><summary>Clubs & Festivals</summary><div class="extra-content">',
+        '<p>Programme zum Nachsehen. Nur „Termine automatisch“ liefert datierte Eventkarten.</p>',
+        f'<div class="catalog-groups">{catalog_markup}</div></div></details>',
+        '<details id="venues"><summary>Venues aus deiner Artist-Auswahl</summary><div class="extra-content">',
+        '<p>Frühere Auftritte sind Hinweise auf passende Orte, keine neuen Termine.</p>',
+        f'<div class="research-grid">{venue_markup}</div></div></details>',
+        '<details id="artists"><summary>Downtempo-Artists entdecken</summary><div class="extra-content">',
+        '<p>Öffentliche Musikprofile zur Inspiration, keine bestätigten Auftritte.</p>',
+        f'<div class="artist-grid">{"".join(artist_cards)}</div></div></details>',
+        '<details id="quellen"><summary>Quellen & Hinweise</summary><div class="extra-content">',
         '<div class="sources"><div class="source-box"><h3>Abgefragte Quellen</h3><ul>', status_items, '</ul></div>',
-        '<div class="source-box"><h3>Hinweise</h3><ul>', warning_items, '</ul></div></div></section>',
+        '<div class="source-box"><h3>Hinweise</h3><ul>', warning_items, '</ul></div></div></div></details></section>',
         '</main><footer class="footer"><div class="wrap"><span>Event Curator · lokal erstellt · persönliche Daten bleiben außerhalb von Git</span>',
         f'<span>Erstellt {datetime.now():%d.%m.%Y %H:%M} · Würzburg {max(100, radius_km):g} km · sonst {radius_km:g} km</span></div></footer>',
         f'<script id="dashboard-data" type="application/json">{payload}</script><script>{script}</script></body></html>',

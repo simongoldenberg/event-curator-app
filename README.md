@@ -9,6 +9,34 @@ und Reports bleiben außerhalb von Git. Quellcode unter MIT-Lizenz.
 Voraussetzungen: Python **3.11+**; für GitHub zusätzlich Git und GitHub CLI (`gh`).
 Die Anwendung benötigt **keine zusätzlichen Pakete** und funktioniert ohne API-Key im Beispielmodus.
 
+## Auf dem Handy nutzen
+
+Ein Live-Lauf erzeugt neben dem Monatsbericht `exports/app.html`, ein App-Manifest
+und zwei Symbole. Damit lässt sich die Seite über HTTPS zum Home-Bildschirm
+hinzufügen. Der Bericht enthält persönliche Daten und bleibt unter `exports/`
+außerhalb von Git.
+
+Für privaten Zugriff von unterwegs ist [Tailscale Serve](https://tailscale.com/docs/features/tailscale-serve)
+der einfache Weg: Tailscale auf Laptop und Handy installieren und auf beiden mit
+demselben Konto verbinden. Auf dem Laptop im Projektordner:
+
+```powershell
+& .\.venv\Scripts\python.exe main.py --live --output exports\phone
+& .\.venv\Scripts\python.exe -m http.server 8765 --bind 127.0.0.1 --directory exports\phone
+```
+
+In einem zweiten Terminal `tailscale serve --bg 8765` ausführen. Tailscale zeigt
+die private HTTPS-Adresse an; auf dem Handy dort `/app.html` öffnen. Auf iPhone
+über **Teilen → Zum Home-Bildschirm**, auf Android über das Browsermenü
+**App installieren** bzw. **Zum Startbildschirm hinzufügen**. Die Python-Suche
+und der Laptop müssen für neue Berichte weiter laufen; die Handy-App zeigt den
+zuletzt erzeugten Bericht. Der HTTPS-Link funktioniert nur auf Geräten im
+eigenen Tailscale-Netz. `tailscale funnel` und GitHub Pages würden den Bericht
+öffentlich erreichbar machen und sind für persönliche Daten ungeeignet.
+
+Der lokale Bericht bleibt auch per Doppelklick nutzbar. Installation und
+Handyzugriff setzen dagegen HTTPS (oder nur zum Entwickeln localhost) voraus.
+
 PowerShell, im Projektordner:
 
 ```powershell
@@ -40,10 +68,11 @@ Kartenkacheln, Skripte oder Tracker von externen Servern.
 
 ### Die interaktive Übersicht bedienen
 
-- Oben zu **Karte**, **Konzerte**, **Parties**, **Vier Länder**, **Venues**, **Downtempo-Radar** oder **Quellen** springen.
-- Auf der Karte Orte, Eventart und Suchtext filtern. Die Eventkarten und Venue-Pins folgen derselben Auswahl.
+- Oben zwischen **Events**, **Karte** und **Mehr** wechseln. Konzerte, Parties und Reisen stehen direkt unter den Filtern.
+- Ort, Eventart und Suchtext bei **Events** filtern. Die Karte folgt derselben Auswahl.
 - Einen Pin oder Venue-Eintrag antippen, um Details zu sehen; per Plus/Minus zoomen oder die Karte ziehen.
 - In einer Eventkarte **Auf Karte** antippen, um zur Venue zu springen.
+- Clubprogramme, Artist-Venues, Downtempo-Vorschläge und Quellenstatus unter **Mehr** aufklappen.
 - Die schraffierten Kreise markieren ungefähr den eingestellten Suchradius. Die exakte
   Regionsprüfung erfolgt anhand der Koordinaten im Python-Code.
 - Fehlt bei einer Quelle ein Venue-Name, heißt der Pin „Ort in … nicht benannt“. Die Event-Koordinate
