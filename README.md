@@ -9,33 +9,28 @@ und Reports bleiben außerhalb von Git. Quellcode unter MIT-Lizenz.
 Voraussetzungen: Python **3.11+**; für GitHub zusätzlich Git und GitHub CLI (`gh`).
 Die Anwendung benötigt **keine zusätzlichen Pakete** und funktioniert ohne API-Key im Beispielmodus.
 
-## Auf dem Handy nutzen
+## Tägliche Nutzung auf dem PC
 
-Ein Live-Lauf erzeugt neben dem Monatsbericht `exports/app.html`, ein App-Manifest
-und zwei Symbole. Damit lässt sich die Seite über HTTPS zum Home-Bildschirm
-hinzufügen. Der Bericht enthält persönliche Daten und bleibt unter `exports/`
-außerhalb von Git.
+- **Event Curator** auf dem Desktop öffnet den letzten Live-Bericht im Browser.
+- **Event Curator - Jetzt suchen** startet eine neue Suche und öffnet danach den Bericht.
+- Die Windows-Aufgabe `EventCurator-Monthly` sucht automatisch einmal pro Monat.
+  Sie prüft täglich um 9 Uhr, ob der Monatslauf bereits erfolgreich war, und
+  holt ihn bei der nächsten Anmeldung nach. Der PC muss dafür eingeschaltet
+  und der Benutzer angemeldet sein.
 
-Für privaten Zugriff von unterwegs ist [Tailscale Serve](https://tailscale.com/docs/features/tailscale-serve)
-der einfache Weg: Tailscale auf Laptop und Handy installieren und auf beiden mit
-demselben Konto verbinden. Auf dem Laptop im Projektordner:
+Der feste lokale Link ist [http://127.0.0.1:8765/app.html](http://127.0.0.1:8765/app.html).
+Die Aufgabe `EventCurator-Web` startet den lokalen Webserver bei der Anmeldung,
+damit der Link als Browser-Favorit funktioniert. Die Web-Aufgabe und die
+Desktop-Verknüpfungen werden mit `scripts/install_pc.ps1` eingerichtet:
 
 ```powershell
-& .\.venv\Scripts\python.exe main.py --live --output exports\phone
-& .\.venv\Scripts\python.exe -m http.server 8766 --bind 127.0.0.1 --directory exports\phone
+powershell.exe -NoProfile -File .\scripts\install_pc.ps1
 ```
 
-In einem zweiten Terminal `tailscale serve --bg 8766` ausführen. Tailscale zeigt
-die private HTTPS-Adresse an; auf dem Handy dort `/app.html` öffnen. Auf iPhone
-über **Teilen → Zum Home-Bildschirm**, auf Android über das Browsermenü
-**App installieren** bzw. **Zum Startbildschirm hinzufügen**. Die Python-Suche
-und der Laptop müssen für neue Berichte weiter laufen; die Handy-App zeigt den
-zuletzt erzeugten Bericht. Der HTTPS-Link funktioniert nur auf Geräten im
-eigenen Tailscale-Netz. `tailscale funnel` und GitHub Pages würden den Bericht
-öffentlich erreichbar machen und sind für persönliche Daten ungeeignet.
-
-Der lokale Bericht bleibt auch per Doppelklick nutzbar. Installation und
-Handyzugriff setzen dagegen HTTPS (oder nur zum Entwickeln localhost) voraus.
+Für einen zusätzlichen Favoriten im eigenen Browser die App öffnen und `Strg+D`
+drücken. Die Desktop-Verknüpfung funktioniert auch ohne Browser-Favorit.
+Die Berichte und persönlichen Daten bleiben unter `exports/` und `data/user_*`
+außerhalb von Git.
 
 PowerShell, im Projektordner:
 
@@ -63,7 +58,7 @@ auch die Kurzform `python main.py --interview`.
 Ohne Optionen entstehen **fiktive, deutlich markierte** Beispielberichte unter
 `exports/digest-YYYY-MM-demo.md` und `.html`. Sie demonstrieren Rubriken, Filter, Karte und Regionsprüfung.
 Ein Live-Lauf erzeugt separate Dateien ohne `-demo`. Öffne die HTML-Datei im Browser per Doppelklick.
-Die Oberfläche funktioniert auch auf schmalen Handybildschirmen und lädt keine Schriften,
+Die Oberfläche ist responsiv und lädt keine Schriften,
 Kartenkacheln, Skripte oder Tracker von externen Servern.
 
 ### Die interaktive Übersicht bedienen

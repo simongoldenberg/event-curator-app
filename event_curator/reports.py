@@ -9,7 +9,6 @@ from . import APP_VERSION
 from .sources.http import safe_url
 from .storage import write_private
 from .ui.dashboard import render_dashboard
-from .ui.install import icon_png, manifest
 
 
 def md(value):
@@ -66,7 +65,4 @@ def write_digest(matches, month, output, warnings, statuses, demo=False, radius_
     write_private(base.with_suffix(".html"), html)
     if not demo:
         write_private(output / "app.html", html)
-        write_private(output / "manifest.webmanifest", manifest())
-        for size in (192, 512):
-            (output / f"event-curator-{size}.png").write_bytes(icon_png(size))
     return base.with_suffix(".md"), base.with_suffix(".html")

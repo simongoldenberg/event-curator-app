@@ -151,10 +151,8 @@ def render_dashboard(matches, month, warnings, statuses, demo=False, radius_km=D
     sections = [
         '<!doctype html><html lang="de"><head><meta charset="utf-8">',
         '<meta name="viewport" content="width=device-width,initial-scale=1">',
-        '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; img-src \'self\' data:; manifest-src \'self\'; style-src \'unsafe-inline\'; script-src \'unsafe-inline\'; base-uri \'none\'; form-action \'none\'">',
+        '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; img-src data:; style-src \'unsafe-inline\'; script-src \'unsafe-inline\'; base-uri \'none\'; form-action \'none\'">',
         '<meta name="color-scheme" content="light">',
-        '<meta name="theme-color" content="#153b35"><meta name="apple-mobile-web-app-capable" content="yes">',
-        '<link rel="manifest" href="./manifest.webmanifest"><link rel="apple-touch-icon" href="./event-curator-192.png">',
         f'<title>Event Curator · {escape(month)}</title><style>{css}</style></head><body>',
         '<a class="sr-only" href="#inhalt">Zum Inhalt springen</a>',
         '<header class="masthead" id="start"><div class="wrap"><div class="topline"><a class="brand" href="#start">EVENT CURATOR</a>',

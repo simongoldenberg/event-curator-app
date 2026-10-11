@@ -4,8 +4,9 @@
 
 - Monatsoberfläche auf Eventfilter, drei Terminrubriken und Karte konzentriert;
   Clubkatalog, Artist-Venues, Musikvorschläge und Quellenstatus stehen unter „Mehr“.
-- Live-Berichte erzeugen eine stabile `app.html` mit lokalem Manifest und App-Symbolen
-  für die Installation über eine private HTTPS-Adresse auf dem Handy.
+- Live-Berichte erzeugen eine stabile `app.html`. Desktop-Verknüpfungen öffnen
+  die App oder starten sofort eine neue Suche; ein Anmeldetask hält den lokalen
+  Browser-Favoriten erreichbar.
 - Private 2000er-Konzertrecherche importierbar: belegte Auftrittskandidaten fließen in
   das lokale Live-Matching ein, offene Fälle in den Clubseiten-Abgleich. Einzelne
   Artist-Abfragen bleiben an die explizite Bandsintown-Option gebunden.

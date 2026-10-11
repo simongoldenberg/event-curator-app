@@ -191,9 +191,7 @@ class CoreTests(unittest.TestCase):
             self.assertIn('id="map-pins"', html)
             self.assertIn('data-region-filter="Berlin"', html)
             self.assertIn("Downtempo-Artists entdecken", html)
-            self.assertIn('rel="manifest"', html)
             self.assertEqual((Path(folder) / "app.html").read_text(encoding="utf-8"), html)
-            self.assertTrue((Path(folder) / "event-curator-192.png").read_bytes().startswith(b"\x89PNG"))
 
     def test_featured_artist_is_distinct_from_favorite(self):
         featured = event(title="Acid Pauli Live")
