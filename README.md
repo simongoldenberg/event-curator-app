@@ -22,10 +22,10 @@ demselben Konto verbinden. Auf dem Laptop im Projektordner:
 
 ```powershell
 & .\.venv\Scripts\python.exe main.py --live --output exports\phone
-& .\.venv\Scripts\python.exe -m http.server 8765 --bind 127.0.0.1 --directory exports\phone
+& .\.venv\Scripts\python.exe -m http.server 8766 --bind 127.0.0.1 --directory exports\phone
 ```
 
-In einem zweiten Terminal `tailscale serve --bg 8765` ausführen. Tailscale zeigt
+In einem zweiten Terminal `tailscale serve --bg 8766` ausführen. Tailscale zeigt
 die private HTTPS-Adresse an; auf dem Handy dort `/app.html` öffnen. Auf iPhone
 über **Teilen → Zum Home-Bildschirm**, auf Android über das Browsermenü
 **App installieren** bzw. **Zum Startbildschirm hinzufügen**. Die Python-Suche
